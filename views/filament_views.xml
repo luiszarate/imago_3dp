@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Materiales ===================== -->
+    <record id="view_filament_material_tree" model="ir.ui.view">
+        <field name="name">imago.filament.material.tree</field>
+        <field name="model">imago.filament.material</field>
+        <field name="arch" type="xml">
+            <tree string="Materiales" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="notes"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_filament_material" model="ir.actions.act_window">
+        <field name="name">Materiales</field>
+        <field name="res_model">imago.filament.material</field>
+        <field name="view_mode">tree</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <!-- ===================== Propósitos ===================== -->
+    <record id="view_print_purpose_tree" model="ir.ui.view">
+        <field name="name">imago.print.purpose.tree</field>
+        <field name="model">imago.print.purpose</field>
+        <field name="arch" type="xml">
+            <tree string="Propósitos" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_print_purpose" model="ir.actions.act_window">
+        <field name="name">Propósitos</field>
+        <field name="res_model">imago.print.purpose</field>
+        <field name="view_mode">tree</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <!-- ===================== Producto filamento ===================== -->
+    <record id="product_template_form_view_filament" model="ir.ui.view">
+        <field name="name">product.template.form.imago.filament</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='options']" position="inside">
+                <div>
+                    <field name="is_filament"/>
+                    <label for="is_filament"/>
+                </div>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Impresión 3D" name="print3d" attrs="{'invisible': [('is_filament', '=', False)]}">
+                    <group>
+                        <group>
+                            <field name="filament_material_id" options="{'no_create': True}"
+                                   attrs="{'required': [('is_filament', '=', True)]}"/>
+                            <field name="filament_color" attrs="{'required': [('is_filament', '=', True)]}"/>
+                            <field name="filament_diameter"/>
+                        </group>
+                        <group>
+                            <field name="spool_nominal_g"/>
+                            <field name="spool_tare_g"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_search_view_filament" model="ir.ui.view">
+        <field name="name">product.template.search.imago.filament</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_to_purchase']" position="after">
+                <filter name="filament" string="Filamento 3D" domain="[('is_filament', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_filament_product" model="ir.actions.act_window">
+        <field name="name">Filamentos</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('is_filament', '=', True)]</field>
+        <field name="context">{'default_is_filament': True, 'default_type': 'product', 'default_tracking': 'lot', 'default_sale_ok': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea un producto por material + color + diámetro</p>
+            <p>Unidad de stock: gramo. Unidad de compra: kg. Seguimiento por lote (un lote = un carrete).</p>
+        </field>
+    </record>
+
+    <!-- ===================== Carretes (lotes) ===================== -->
+    <record id="view_production_lot_form_spool" model="ir.ui.view">
+        <field name="name">stock.production.lot.form.imago.spool</field>
+        <field name="model">stock.production.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header attrs="{'invisible': [('is_spool', '=', False)]}">
+                    <button name="action_open_weigh_wizard" type="object" string="Pesar carrete"
+                            groups="imago_3dp.group_print_operator"/>
+                    <button name="action_mark_empty" type="object" string="Marcar como agotado"
+                            groups="imago_3dp.group_print_operator"
+                            confirm="El carrete se ajustará a 0 g y se desmontará de la impresora. ¿Continuar?"/>
+                    <field name="spool_state" widget="statusbar"/>
+                </header>
+            </xpath>
+            <xpath expr="//group[@name='main_group']" position="after">
+                <field name="is_spool" invisible="1"/>
+                <group string="Carrete de filamento" name="spool" attrs="{'invisible': [('is_spool', '=', False)]}">
+                    <group>
+                        <field name="filament_material_id"/>
+                        <field name="filament_color"/>
+                        <field name="mounted_workcenter_id"/>
+                    </group>
+                    <group>
+                        <field name="spool_remaining_g"/>
+                        <field name="spool_remaining_pct" widget="progressbar"/>
+                        <field name="opened_date"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_spool_tree" model="ir.ui.view">
+        <field name="name">stock.production.lot.spool.tree</field>
+        <field name="model">stock.production.lot</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <tree string="Carretes" create="0" decoration-danger="spool_state == 'empty'"
+                  decoration-warning="spool_state == 'low'">
+                <field name="name"/>
+                <field name="filament_material_id"/>
+                <field name="filament_color"/>
+                <field name="product_id" optional="hide"/>
+                <field name="spool_remaining_g" sum="Total"/>
+                <field name="spool_remaining_pct" widget="progressbar"/>
+                <field name="spool_state" widget="badge"
+                       decoration-success="spool_state == 'new'" decoration-info="spool_state == 'open'"
+                       decoration-warning="spool_state == 'low'" decoration-danger="spool_state == 'empty'"/>
+                <field name="mounted_workcenter_id"/>
+                <field name="opened_date"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <button name="action_open_weigh_wizard" type="object" string="Pesar" icon="fa-balance-scale"
+                        groups="imago_3dp.group_print_operator"/>
+                <button name="action_mark_empty" type="object" string="Agotado" icon="fa-ban"
+                        groups="imago_3dp.group_print_operator" attrs="{'invisible': [('spool_state', '=', 'empty')]}"
+                        confirm="El carrete se ajustará a 0 g y se desmontará de la impresora. ¿Continuar?"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_spool_search" model="ir.ui.view">
+        <field name="name">stock.production.lot.spool.search</field>
+        <field name="model">stock.production.lot</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <search string="Carretes">
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="filament_material_id"/>
+                <filter name="available" string="Disponibles" domain="[('spool_state', 'in', ('new', 'open', 'low'))]"/>
+                <filter name="low" string="Casi vacíos" domain="[('spool_state', '=', 'low')]"/>
+                <filter name="empty" string="Vacíos" domain="[('spool_state', '=', 'empty')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_material" string="Material" context="{'group_by': 'filament_material_id'}"/>
+                    <filter name="group_product" string="Filamento" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by': 'spool_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_spool" model="ir.actions.act_window">
+        <field name="name">Carretes</field>
+        <field name="res_model">stock.production.lot</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('is_spool', '=', True)]</field>
+        <field name="context">{'search_default_available': 1}</field>
+        <field name="search_view_id" ref="view_spool_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_spool_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_production_lot_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay carretes</p>
+            <p>Los carretes se crean con el botón "Generar carretes" de la recepción de filamento.</p>
+        </field>
+    </record>
+</odoo>

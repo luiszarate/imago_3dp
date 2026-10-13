@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Formulario -->
+    <record id="view_print_request_form" model="ir.ui.view">
+        <field name="name">imago.print.request.form</field>
+        <field name="model">imago.print.request</field>
+        <field name="arch" type="xml">
+            <form string="Solicitud de impresión 3D">
+                <header>
+                    <button name="action_submit" string="Enviar" type="object" class="oe_highlight"
+                            states="draft,needs_info"/>
+                    <button name="action_queue" string="Poner en cola" type="object" class="oe_highlight"
+                            states="submitted" groups="imago_3dp.group_print_operator"/>
+                    <button name="action_request_info" string="Pedir aclaración" type="object"
+                            states="submitted,queued" groups="imago_3dp.group_print_operator"/>
+                    <button name="action_reject" string="Rechazar" type="object"
+                            states="submitted,queued" groups="imago_3dp.group_print_operator"/>
+                    <button name="action_open_start_wizard" string="Iniciar impresión" type="object" class="oe_highlight"
+                            states="queued,post" groups="imago_3dp.group_print_operator"/>
+                    <button name="action_open_finish_wizard" string="Terminar intento" type="object" class="oe_highlight"
+                            states="printing" groups="imago_3dp.group_print_operator"/>
+                    <button name="action_deliver" string="Entregar" type="object" class="oe_highlight"
+                            states="post" groups="imago_3dp.group_print_operator"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            states="draft,submitted,needs_info" confirm="¿Cancelar esta solicitud?"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            states="queued,printing,post" groups="imago_3dp.group_print_operator"
+                            confirm="¿Cancelar esta solicitud?"/>
+                    <button name="action_reopen" string="Reabrir" type="object"
+                            states="done,rejected,cancelled" groups="imago_3dp.group_print_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,queued,printing,post,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_jobs" type="object" class="oe_stat_button" icon="fa-cubes">
+                            <field name="job_count" widget="statinfo" string="Intentos"/>
+                        </button>
+                        <button name="action_view_production" type="object" class="oe_stat_button" icon="fa-wrench"
+                                groups="imago_3dp.group_print_operator"
+                                attrs="{'invisible': [('production_count', '=', 0)]}">
+                            <field name="production_count" widget="statinfo" string="Orden de fabricación"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Atrasada" bg_color="bg-danger"
+                            attrs="{'invisible': [('is_late', '=', False)]}"/>
+                    <field name="is_late" invisible="1"/>
+                    <field name="user_is_operator" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <label for="title"/>
+                        <h2>
+                            <field name="title" placeholder="p. ej. Soporte de antena v3"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                        </h2>
+                    </div>
+                    <group string="Solicitud" name="request">
+                        <group>
+                            <field name="requester_id" readonly="1" force_save="1"/>
+                            <field name="purpose_id" options="{'no_create': True}"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="reference"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="filament_product_id" options="{'no_create': True}"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="filament_material_id"/>
+                            <field name="filament_color"/>
+                            <field name="allow_substitute"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                        </group>
+                        <group>
+                            <field name="qty_pieces"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="date_required"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="priority" widget="priority"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="file_ids" widget="many2many_binary"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                            <field name="file_url" widget="url" placeholder="Link de Drive, Onshape…"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Parámetros (opcional)" name="parameters">
+                            <group>
+                                <group>
+                                    <field name="infill_pct"
+                                           attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                                    <field name="layer_height_mm"
+                                           attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                                    <field name="supports"
+                                           attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                                </group>
+                            </group>
+                            <field name="notes" placeholder="Notas técnicas para el operador…"
+                                   attrs="{'readonly': [('state', 'not in', ('draft', 'needs_info'))]}"/>
+                        </page>
+                        <page string="Impresión" name="printing" attrs="{'invisible': [('state', '=', 'draft')]}">
+                            <group>
+                                <group>
+                                    <field name="operator_id" options="{'no_create': True}"
+                                           attrs="{'readonly': [('user_is_operator', '=', False)]}"/>
+                                    <field name="planned_workcenter_id" options="{'no_create': True}"
+                                           attrs="{'readonly': [('user_is_operator', '=', False)]}"/>
+                                    <field name="est_print_minutes"
+                                           attrs="{'readonly': [('user_is_operator', '=', False)]}"/>
+                                    <field name="est_grams"
+                                           attrs="{'readonly': [('user_is_operator', '=', False)]}"/>
+                                    <field name="production_id" groups="imago_3dp.group_print_operator"/>
+                                </group>
+                                <group>
+                                    <field name="pieces_ok"/>
+                                    <field name="pieces_pending"/>
+                                    <field name="grams_total"/>
+                                    <field name="grams_failed"/>
+                                    <field name="print_minutes_total"/>
+                                    <field name="date_submitted"/>
+                                    <field name="date_done"/>
+                                </group>
+                            </group>
+                            <field name="job_ids" readonly="1">
+                                <tree decoration-info="result == 'running'" decoration-danger="result == 'failed'"
+                                      decoration-warning="result == 'partial'">
+                                    <field name="name"/>
+                                    <field name="workcenter_id"/>
+                                    <field name="date_start"/>
+                                    <field name="date_end"/>
+                                    <field name="duration_minutes" sum="Total"/>
+                                    <field name="pieces_ok" sum="Total"/>
+                                    <field name="grams_total" sum="Total"/>
+                                    <field name="result"/>
+                                    <field name="failure_reason"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Rechazo" name="rejection" attrs="{'invisible': [('reject_reason', '=', False)]}">
+                            <field name="reject_reason"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Lista -->
+    <record id="view_print_request_tree" model="ir.ui.view">
+        <field name="name">imago.print.request.tree</field>
+        <field name="model">imago.print.request</field>
+        <field name="arch" type="xml">
+            <tree string="Solicitudes de impresión 3D" decoration-danger="is_late"
+                  decoration-muted="state in ('done', 'rejected', 'cancelled')">
+                <field name="is_late" invisible="1"/>
+                <field name="priority" widget="priority" optional="show"/>
+                <field name="name"/>
+                <field name="title"/>
+                <field name="requester_id" widget="many2one_avatar_user"/>
+                <field name="purpose_id" optional="show"/>
+                <field name="filament_product_id"/>
+                <field name="qty_pieces"/>
+                <field name="date_required"/>
+                <field name="planned_workcenter_id" optional="show"/>
+                <field name="operator_id" optional="hide"/>
+                <field name="grams_total" optional="hide" sum="Total"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('submitted', 'queued')"
+                       decoration-warning="state == 'needs_info'"
+                       decoration-primary="state in ('printing', 'post')"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'rejected'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Kanban (cola de impresión) -->
+    <record id="view_print_request_kanban" model="ir.ui.view">
+        <field name="name">imago.print.request.kanban</field>
+        <field name="model">imago.print.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" records_draggable="0" group_create="0" group_delete="0"
+                    group_edit="0" quick_create="0" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="state"/>
+                <field name="requester_id"/>
+                <field name="filament_material_id"/>
+                <field name="filament_color"/>
+                <field name="qty_pieces"/>
+                <field name="date_required"/>
+                <field name="is_late"/>
+                <field name="priority"/>
+                <field name="planned_workcenter_id"/>
+                <field name="activity_ids"/>
+                <field name="activity_state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                        <div><field name="title"/></div>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div>
+                                        <field name="filament_material_id"/> · <field name="filament_color"/>
+                                        · <field name="qty_pieces"/> pz
+                                    </div>
+                                    <div t-if="record.planned_workcenter_id.raw_value">
+                                        <i class="fa fa-print" title="Impresora prevista"/> <field name="planned_workcenter_id"/>
+                                    </div>
+                                    <div t-attf-class="#{record.is_late.raw_value ? 'text-danger font-weight-bold' : ''}">
+                                        <i class="fa fa-calendar" title="Fecha requerida"/> <field name="date_required"/>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="priority" widget="priority"/>
+                                        <field name="activity_ids" widget="kanban_activity"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <img t-att-src="kanban_image('res.users', 'image_128', record.requester_id.raw_value)"
+                                             t-att-title="record.requester_id.value" t-att-alt="record.requester_id.value"
+                                             class="oe_kanban_avatar"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Búsqueda -->
+    <record id="view_print_request_search" model="ir.ui.view">
+        <field name="name">imago.print.request.search</field>
+        <field name="model">imago.print.request</field>
+        <field name="arch" type="xml">
+            <search string="Solicitudes de impresión 3D">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="reference"/>
+                <field name="requester_id"/>
+                <field name="filament_product_id"/>
+                <field name="planned_workcenter_id"/>
+                <filter name="my_requests" string="Mis solicitudes" domain="[('requester_id', '=', uid)]"/>
+                <filter name="assigned_to_me" string="Asignadas a mí" domain="[('operator_id', '=', uid)]"
+                        groups="imago_3dp.group_print_operator"/>
+                <separator/>
+                <filter name="pending" string="Pendientes"
+                        domain="[('state', 'not in', ('done', 'rejected', 'cancelled'))]"/>
+                <filter name="late" string="Atrasadas" domain="[('is_late', '=', True)]"/>
+                <filter name="urgent" string="Urgentes" domain="[('priority', '=', '2')]"/>
+                <separator/>
+                <filter name="activities_my" string="Mis actividades" domain="[('activity_ids.user_id', '=', uid)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>
+                    <filter name="group_printer" string="Impresora prevista" context="{'group_by': 'planned_workcenter_id'}"/>
+                    <filter name="group_purpose" string="Propósito" context="{'group_by': 'purpose_id'}"/>
+                    <filter name="group_requester" string="Solicitante" context="{'group_by': 'requester_id'}"/>
+                    <filter name="group_month" string="Mes" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acciones -->
+    <record id="action_print_request_my" model="ir.actions.act_window">
+        <field name="name">Mis solicitudes</field>
+        <field name="res_model">imago.print.request</field>
+        <field name="view_mode">tree,form,kanban</field>
+        <field name="search_view_id" ref="view_print_request_search"/>
+        <field name="context">{'search_default_my_requests': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea tu primera solicitud de impresión 3D</p>
+            <p>Llena qué se imprime, el propósito, el filamento, las piezas y la fecha requerida; adjunta el archivo o el link y presiona Enviar.</p>
+        </field>
+    </record>
+
+    <record id="action_print_request_queue" model="ir.actions.act_window">
+        <field name="name">Cola de impresión</field>
+        <field name="res_model">imago.print.request</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="search_view_id" ref="view_print_request_search"/>
+        <field name="domain">[('state', '!=', 'draft')]</field>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay solicitudes en la cola</p>
+        </field>
+    </record>
+</odoo>

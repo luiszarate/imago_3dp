@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_job_start_wizard_form" model="ir.ui.view">
+        <field name="name">imago.print.job.start.wizard.form</field>
+        <field name="model">imago.print.job.start.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Iniciar impresión">
+                <field name="request_id" invisible="1"/>
+                <field name="allowed_lot_ids" invisible="1"/>
+                <div class="alert alert-warning" role="alert" attrs="{'invisible': [('warning_text', '=', False)]}">
+                    <field name="warning_text" nolabel="1"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="workcenter_id" options="{'no_create': True}"/>
+                        <field name="filament_product_id"/>
+                        <field name="allow_substitute"/>
+                    </group>
+                    <group>
+                        <field name="pieces_planned"/>
+                        <field name="est_grams"/>
+                        <field name="est_minutes"/>
+                    </group>
+                </group>
+                <field name="lot_ids" options="{'no_create': True}">
+                    <tree>
+                        <field name="name"/>
+                        <field name="product_id"/>
+                        <field name="spool_remaining_g"/>
+                        <field name="spool_remaining_pct" widget="progressbar"/>
+                        <field name="spool_state"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="action_start" type="object" string="Iniciar impresión" class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

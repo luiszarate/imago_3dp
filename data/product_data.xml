@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="product_category_print3d" model="product.category">
+        <field name="name">Impresión 3D</field>
+    </record>
+
+    <record id="product_print3d_prototype" model="product.product">
+        <field name="name">Prototipo impreso 3D</field>
+        <field name="type">consu</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="False"/>
+        <field name="categ_id" ref="product_category_print3d"/>
+        <field name="default_code">PRT-3D</field>
+    </record>
+
+    <!-- Producto genérico por defecto para la compañía principal -->
+    <record id="base.main_company" model="res.company">
+        <field name="print3d_product_id" ref="product_print3d_prototype"/>
+    </record>
+</odoo>

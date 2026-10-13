@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_print3d_root" name="Impresión 3D" sequence="36"
+              web_icon="imago_3dp,static/description/icon.png"
+              groups="imago_3dp.group_print_requester"/>
+
+    <menuitem id="menu_print3d_requests" name="Solicitudes" parent="menu_print3d_root" sequence="10"/>
+    <menuitem id="menu_print3d_my_requests" name="Mis solicitudes" parent="menu_print3d_requests"
+              action="action_print_request_my" sequence="10"/>
+    <menuitem id="menu_print3d_queue" name="Cola de impresión" parent="menu_print3d_requests"
+              action="action_print_request_queue" sequence="20" groups="imago_3dp.group_print_operator"/>
+
+    <menuitem id="menu_print3d_printers" name="Impresoras" parent="menu_print3d_root"
+              action="action_printer" sequence="20" groups="imago_3dp.group_print_operator"/>
+
+    <menuitem id="menu_print3d_spools" name="Carretes" parent="menu_print3d_root"
+              action="action_spool" sequence="30" groups="imago_3dp.group_print_operator"/>
+
+    <menuitem id="menu_print3d_reports" name="Reportes" parent="menu_print3d_root" sequence="40"
+              groups="imago_3dp.group_print_operator"/>
+    <menuitem id="menu_print3d_report_jobs" name="Intentos de impresión" parent="menu_print3d_reports"
+              action="action_print_job_report" sequence="10"/>
+    <menuitem id="menu_print3d_report_failure" name="Tasa de fallos" parent="menu_print3d_reports"
+              action="action_print_job_failure_rate" sequence="20"/>
+    <menuitem id="menu_print3d_report_consumption" name="Consumo de filamento" parent="menu_print3d_reports"
+              action="action_print_consumption_report" sequence="30"/>
+    <menuitem id="menu_print3d_report_occupancy" name="Ocupación de impresoras" parent="menu_print3d_reports"
+              action="action_printer_occupancy" sequence="40"/>
+
+    <menuitem id="menu_print3d_config" name="Configuración" parent="menu_print3d_root" sequence="90"
+              groups="imago_3dp.group_print_manager"/>
+    <menuitem id="menu_print3d_config_filaments" name="Filamentos" parent="menu_print3d_config"
+              action="action_filament_product" sequence="10"/>
+    <menuitem id="menu_print3d_config_materials" name="Materiales" parent="menu_print3d_config"
+              action="action_filament_material" sequence="20"/>
+    <menuitem id="menu_print3d_config_purposes" name="Propósitos" parent="menu_print3d_config"
+              action="action_print_purpose" sequence="30"/>
+    <menuitem id="menu_print3d_config_settings" name="Ajustes" parent="menu_print3d_config"
+              action="action_print3d_settings" sequence="40" groups="base.group_system"/>
+</odoo>

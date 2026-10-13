@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_activity_review_request" model="mail.activity.type">
+        <field name="name">Revisar solicitud de impresión</field>
+        <field name="icon">fa-cube</field>
+        <field name="res_model_id" ref="model_imago_print_request"/>
+        <field name="delay_count">1</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="mail_activity_low_spool" model="mail.activity.type">
+        <field name="name">Carrete casi vacío</field>
+        <field name="icon">fa-exclamation-triangle</field>
+        <field name="res_model_id" ref="stock.model_stock_production_lot"/>
+        <field name="sequence">51</field>
+    </record>
+</odoo>

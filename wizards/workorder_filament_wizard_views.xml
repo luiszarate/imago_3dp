@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_workorder_filament_wizard_form" model="ir.ui.view">
+        <field name="name">imago.workorder.filament.wizard.form</field>
+        <field name="model">imago.workorder.filament.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Registrar filamento">
+                <group>
+                    <field name="workorder_id" readonly="1"/>
+                </group>
+                <field name="line_ids">
+                    <tree editable="bottom">
+                        <field name="lot_id" options="{'no_create': True}"/>
+                        <field name="available_g"/>
+                        <field name="grams"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="action_confirm" type="object" string="Registrar" class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

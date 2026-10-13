@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_print3d" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.imago.print3d</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="mrp.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@data-key='mrp']" position="inside">
+                <h2>Impresión 3D</h2>
+                <div class="row mt16 o_settings_container" name="print3d_setting_container">
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Inventario de filamento</span>
+                            <div class="text-muted">Ubicación de los carretes y umbral de carrete casi vacío.</div>
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="print3d_location_id" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_location_id" options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="print3d_low_spool_g" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_low_spool_g"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Solicitudes de impresión</span>
+                            <div class="text-muted">Operador que recibe las solicitudes, producto genérico de la MO y centro de mano de obra [LAB].</div>
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="print3d_default_operator_id" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_default_operator_id" options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="print3d_product_id" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_product_id" options="{'no_create': True}"/>
+                                </div>
+                                <div class="row">
+                                    <label for="print3d_labor_workcenter_id" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_labor_workcenter_id" options="{'no_create': True}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_print3d_settings" model="ir.actions.act_window">
+        <field name="name">Ajustes</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'mrp', 'bin_size': False}</field>
+    </record>
+</odoo>

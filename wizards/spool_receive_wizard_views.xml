@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_spool_receive_wizard_form" model="ir.ui.view">
+        <field name="name">imago.spool.receive.wizard.form</field>
+        <field name="model">imago.spool.receive.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generar carretes">
+                <p>
+                    Se crea un lote por carrete con la secuencia de carretes y se asigna a la ubicación de
+                    filamento 3D. Después valida la recepción con el botón estándar e imprime las etiquetas.
+                </p>
+                <field name="picking_id" invisible="1"/>
+                <field name="line_ids">
+                    <tree editable="bottom" create="0">
+                        <field name="move_id" invisible="1"/>
+                        <field name="product_id"/>
+                        <field name="qty_g"/>
+                        <field name="spool_count"/>
+                        <field name="grams_per_spool"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="action_generate" type="object" string="Generar carretes" class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

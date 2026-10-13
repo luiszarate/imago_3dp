@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form_spool" model="ir.ui.view">
+        <field name="name">stock.picking.form.imago.spool</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_confirm']" position="before">
+                <field name="has_filament_moves" invisible="1"/>
+                <button name="action_open_spool_receive_wizard" type="object" string="Generar carretes"
+                        groups="imago_3dp.group_print_operator"
+                        attrs="{'invisible': ['|', '|', ('has_filament_moves', '=', False),
+                                              ('picking_type_code', '!=', 'incoming'),
+                                              ('state', 'in', ('draft', 'done', 'cancel'))]}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

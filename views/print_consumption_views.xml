@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_print_consumption_tree" model="ir.ui.view">
+        <field name="name">imago.print.consumption.tree</field>
+        <field name="model">imago.print.consumption</field>
+        <field name="arch" type="xml">
+            <tree string="Consumo de filamento" create="0" edit="0">
+                <field name="date"/>
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="material_id" optional="show"/>
+                <field name="grams" sum="Total"/>
+                <field name="source"/>
+                <field name="workcenter_id"/>
+                <field name="request_id" optional="show"/>
+                <field name="workorder_id" optional="show"/>
+                <field name="purpose_id" optional="hide"/>
+                <field name="stock_move_id" optional="hide" groups="stock.group_stock_user"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_print_consumption_search" model="ir.ui.view">
+        <field name="name">imago.print.consumption.search</field>
+        <field name="model">imago.print.consumption</field>
+        <field name="arch" type="xml">
+            <search string="Consumo de filamento">
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="request_id"/>
+                <field name="workorder_id"/>
+                <filter name="development" string="Desarrollo" domain="[('source', '=', 'development')]"/>
+                <filter name="production" string="Producción" domain="[('source', '=', 'production')]"/>
+                <separator/>
+                <filter name="date" string="Fecha" date="date"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_material" string="Material" context="{'group_by': 'material_id'}"/>
+                    <filter name="group_product" string="Filamento" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_lot" string="Carrete" context="{'group_by': 'lot_id'}"/>
+                    <filter name="group_purpose" string="Propósito" context="{'group_by': 'purpose_id'}"/>
+                    <filter name="group_source" string="Origen" context="{'group_by': 'source'}"/>
+                    <filter name="group_workcenter" string="Impresora" context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_month" string="Mes" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_print_consumption_pivot" model="ir.ui.view">
+        <field name="name">imago.print.consumption.pivot</field>
+        <field name="model">imago.print.consumption</field>
+        <field name="arch" type="xml">
+            <pivot string="Consumo de filamento" sample="1">
+                <field name="material_id" type="row"/>
+                <field name="source" type="col"/>
+                <field name="grams" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_print_consumption_graph" model="ir.ui.view">
+        <field name="name">imago.print.consumption.graph</field>
+        <field name="model">imago.print.consumption</field>
+        <field name="arch" type="xml">
+            <graph string="Consumo de filamento" type="bar" stacked="1" sample="1">
+                <field name="date" interval="month"/>
+                <field name="material_id"/>
+                <field name="grams" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_print_consumption_report" model="ir.actions.act_window">
+        <field name="name">Consumo de filamento</field>
+        <field name="res_model">imago.print.consumption</field>
+        <field name="view_mode">pivot,graph,tree</field>
+        <field name="search_view_id" ref="view_print_consumption_search"/>
+    </record>
+</odoo>

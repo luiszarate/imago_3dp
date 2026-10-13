@@ -1,0 +1,25 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_print_request_requester,imago.print.request requester,model_imago_print_request,group_print_requester,1,1,1,0
+access_print_request_operator,imago.print.request operator,model_imago_print_request,group_print_operator,1,1,1,0
+access_print_request_manager,imago.print.request manager,model_imago_print_request,group_print_manager,1,1,1,1
+access_print_job_requester,imago.print.job requester,model_imago_print_job,group_print_requester,1,0,0,0
+access_print_job_operator,imago.print.job operator,model_imago_print_job,group_print_operator,1,1,1,0
+access_print_job_manager,imago.print.job manager,model_imago_print_job,group_print_manager,1,1,1,1
+access_print_consumption_requester,imago.print.consumption requester,model_imago_print_consumption,group_print_requester,1,0,0,0
+access_print_consumption_operator,imago.print.consumption operator,model_imago_print_consumption,group_print_operator,1,1,1,0
+access_print_consumption_manager,imago.print.consumption manager,model_imago_print_consumption,group_print_manager,1,1,1,1
+access_print_purpose_requester,imago.print.purpose requester,model_imago_print_purpose,group_print_requester,1,0,0,0
+access_print_purpose_manager,imago.print.purpose manager,model_imago_print_purpose,group_print_manager,1,1,1,1
+access_filament_material_requester,imago.filament.material requester,model_imago_filament_material,group_print_requester,1,0,0,0
+access_filament_material_manager,imago.filament.material manager,model_imago_filament_material,group_print_manager,1,1,1,1
+access_mrp_workcenter_print_requester,mrp.workcenter print requester,mrp.model_mrp_workcenter,group_print_requester,1,0,0,0
+access_request_message_wizard,imago.print.request.message.wizard,model_imago_print_request_message_wizard,group_print_operator,1,1,1,0
+access_job_start_wizard,imago.print.job.start.wizard,model_imago_print_job_start_wizard,group_print_operator,1,1,1,0
+access_job_finish_wizard,imago.print.job.finish.wizard,model_imago_print_job_finish_wizard,group_print_operator,1,1,1,0
+access_job_finish_wizard_line,imago.print.job.finish.wizard.line,model_imago_print_job_finish_wizard_line,group_print_operator,1,1,1,1
+access_workorder_filament_wizard,imago.workorder.filament.wizard,model_imago_workorder_filament_wizard,group_print_operator,1,1,1,0
+access_workorder_filament_wizard_line,imago.workorder.filament.wizard.line,model_imago_workorder_filament_wizard_line,group_print_operator,1,1,1,1
+access_spool_receive_wizard,imago.spool.receive.wizard,model_imago_spool_receive_wizard,group_print_operator,1,1,1,0
+access_spool_receive_wizard_line,imago.spool.receive.wizard.line,model_imago_spool_receive_wizard_line,group_print_operator,1,1,1,1
+access_spool_weigh_wizard,imago.spool.weigh.wizard,model_imago_spool_weigh_wizard,group_print_operator,1,1,1,0
+access_spool_mount_wizard,imago.spool.mount.wizard,model_imago_spool_mount_wizard,group_print_operator,1,1,1,0

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mrp_production_workorder_form_view_filament" model="ir.ui.view">
+        <field name="name">mrp.workorder.form.imago.filament</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_production_workorder_form_view_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="is_3d_printer" invisible="1"/>
+                <field name="is_print_request_wo" invisible="1"/>
+                <button name="action_open_filament_wizard" type="object" string="Registrar filamento"
+                        groups="imago_3dp.group_print_operator"
+                        attrs="{'invisible': ['|', '|', ('is_3d_printer', '=', False), ('is_print_request_wo', '=', True), ('state', '=', 'cancel')]}"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Filamento 3D" name="print3d_filament"
+                      attrs="{'invisible': [('is_3d_printer', '=', False)]}">
+                    <field name="print_consumption_ids" readonly="1">
+                        <tree>
+                            <field name="date"/>
+                            <field name="lot_id"/>
+                            <field name="product_id"/>
+                            <field name="grams" sum="Total"/>
+                            <field name="source"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

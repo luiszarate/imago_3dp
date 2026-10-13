@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_print_job_tree" model="ir.ui.view">
+        <field name="name">imago.print.job.tree</field>
+        <field name="model">imago.print.job</field>
+        <field name="arch" type="xml">
+            <tree string="Intentos de impresión" create="0" decoration-info="result == 'running'"
+                  decoration-danger="result == 'failed'" decoration-warning="result == 'partial'">
+                <field name="name"/>
+                <field name="request_id"/>
+                <field name="workcenter_id"/>
+                <field name="operator_id" widget="many2one_avatar_user" optional="show"/>
+                <field name="date_start"/>
+                <field name="date_end" optional="show"/>
+                <field name="duration_minutes" sum="Total"/>
+                <field name="pieces_planned" optional="hide"/>
+                <field name="pieces_ok" sum="Total"/>
+                <field name="grams_total" sum="Total"/>
+                <field name="labor_minutes" optional="hide" sum="Total"/>
+                <field name="result"/>
+                <field name="failure_reason" optional="show"/>
+                <button name="action_open_finish_wizard" type="object" string="Terminar" icon="fa-stop"
+                        attrs="{'invisible': [('result', '!=', 'running')]}" groups="imago_3dp.group_print_operator"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_print_job_form" model="ir.ui.view">
+        <field name="name">imago.print.job.form</field>
+        <field name="model">imago.print.job</field>
+        <field name="arch" type="xml">
+            <form string="Intento de impresión" create="0" edit="0">
+                <header>
+                    <button name="action_open_finish_wizard" type="object" string="Terminar intento" class="oe_highlight"
+                            attrs="{'invisible': [('result', '!=', 'running')]}" groups="imago_3dp.group_print_operator"/>
+                    <field name="result" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="request_id"/>
+                            <field name="attempt_no"/>
+                            <field name="workcenter_id"/>
+                            <field name="operator_id"/>
+                            <field name="workorder_id" groups="imago_3dp.group_print_operator"/>
+                            <field name="labor_workorder_id" groups="imago_3dp.group_print_operator"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration_minutes"/>
+                            <field name="est_minutes"/>
+                            <field name="labor_minutes"/>
+                        </group>
+                        <group>
+                            <field name="pieces_planned"/>
+                            <field name="pieces_ok"/>
+                        </group>
+                        <group>
+                            <field name="est_grams"/>
+                            <field name="grams_total"/>
+                            <field name="failure_reason"/>
+                            <field name="failure_note"/>
+                        </group>
+                    </group>
+                    <field name="consumption_ids">
+                        <tree>
+                            <field name="lot_id"/>
+                            <field name="product_id"/>
+                            <field name="grams" sum="Total"/>
+                            <field name="date"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_print_job_search" model="ir.ui.view">
+        <field name="name">imago.print.job.search</field>
+        <field name="model">imago.print.job</field>
+        <field name="arch" type="xml">
+            <search string="Intentos de impresión">
+                <field name="name"/>
+                <field name="request_id"/>
+                <field name="workcenter_id"/>
+                <field name="operator_id"/>
+                <filter name="running" string="En curso" domain="[('result', '=', 'running')]"/>
+                <filter name="failed" string="Fallidos" domain="[('result', '=', 'failed')]"/>
+                <filter name="finished" string="Terminados" domain="[('result', 'not in', ('running', 'cancelled'))]"/>
+                <separator/>
+                <filter name="date_start" string="Fecha de inicio" date="date_start"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_workcenter" string="Impresora" context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_result" string="Resultado" context="{'group_by': 'result'}"/>
+                    <filter name="group_failure" string="Causa de falla" context="{'group_by': 'failure_reason'}"/>
+                    <filter name="group_operator" string="Operador" context="{'group_by': 'operator_id'}"/>
+                    <filter name="group_purpose" string="Propósito" context="{'group_by': 'purpose_id'}"/>
+                    <filter name="group_month" string="Mes" context="{'group_by': 'date_start:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_print_job_pivot" model="ir.ui.view">
+        <field name="name">imago.print.job.pivot</field>
+        <field name="model">imago.print.job</field>
+        <field name="arch" type="xml">
+            <pivot string="Intentos de impresión" sample="1">
+                <field name="workcenter_id" type="row"/>
+                <field name="date_start" interval="month" type="col"/>
+                <field name="duration_minutes" type="measure"/>
+                <field name="grams_total" type="measure"/>
+                <field name="pieces_ok" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_print_job_failure_pivot" model="ir.ui.view">
+        <field name="name">imago.print.job.failure.pivot</field>
+        <field name="model">imago.print.job</field>
+        <field name="arch" type="xml">
+            <pivot string="Tasa de fallos" sample="1">
+                <field name="workcenter_id" type="row"/>
+                <field name="result" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_print_job_graph" model="ir.ui.view">
+        <field name="name">imago.print.job.graph</field>
+        <field name="model">imago.print.job</field>
+        <field name="arch" type="xml">
+            <graph string="Intentos de impresión" type="bar" stacked="1" sample="1">
+                <field name="workcenter_id"/>
+                <field name="result"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_print_job" model="ir.actions.act_window">
+        <field name="name">Intentos de impresión</field>
+        <field name="res_model">imago.print.job</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_print_job_search"/>
+    </record>
+
+    <record id="action_print_job_report" model="ir.actions.act_window">
+        <field name="name">Intentos de impresión</field>
+        <field name="res_model">imago.print.job</field>
+        <field name="view_mode">pivot,graph,tree,form</field>
+        <field name="search_view_id" ref="view_print_job_search"/>
+        <field name="context">{'search_default_finished': 1}</field>
+    </record>
+
+    <record id="action_print_job_failure_rate" model="ir.actions.act_window">
+        <field name="name">Tasa de fallos</field>
+        <field name="res_model">imago.print.job</field>
+        <field name="view_mode">pivot,graph,tree</field>
+        <field name="search_view_id" ref="view_print_job_search"/>
+        <field name="context">{'search_default_finished': 1}</field>
+    </record>
+
+    <record id="action_print_job_failure_rate_pivot" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_print_job_failure_pivot"/>
+        <field name="act_window_id" ref="action_print_job_failure_rate"/>
+    </record>
+</odoo>

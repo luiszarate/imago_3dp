@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mrp_workcenter_view_form_printer" model="ir.ui.view">
+        <field name="name">mrp.workcenter.form.imago.printer</field>
+        <field name="model">mrp.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_workcenter_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='alternative_workcenter_ids']" position="after">
+                <field name="is_3d_printer"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Impresora 3D" name="print3d" attrs="{'invisible': [('is_3d_printer', '=', False)]}">
+                    <group>
+                        <group>
+                            <field name="printer_model"/>
+                            <field name="allowed_material_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="out_of_service"/>
+                        </group>
+                        <group>
+                            <field name="printer_status"/>
+                            <field name="mounted_lot_id" readonly="1"/>
+                            <field name="mounted_lot_remaining_pct" widget="progressbar"
+                                   attrs="{'invisible': [('mounted_lot_id', '=', False)]}"/>
+                            <field name="current_workorder_id"/>
+                            <field name="current_request_id"/>
+                            <field name="current_eta"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="mrp_workcenter_view_kanban_printer" model="ir.ui.view">
+        <field name="name">mrp.workcenter.kanban.imago.printer</field>
+        <field name="model">mrp.workcenter</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <kanban create="0" class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="printer_model"/>
+                <field name="printer_status"/>
+                <field name="out_of_service"/>
+                <field name="current_workorder_id"/>
+                <field name="current_request_id"/>
+                <field name="current_eta"/>
+                <field name="mounted_lot_id"/>
+                <field name="mounted_lot_remaining_g"/>
+                <field name="mounted_lot_remaining_pct"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                    <div class="text-muted"><field name="printer_model"/></div>
+                                </div>
+                                <span t-attf-class="badge badge-pill #{record.printer_status.raw_value == 'free' ? 'badge-success' : (record.printer_status.raw_value == 'printing' ? 'badge-primary' : 'badge-secondary')}">
+                                    <field name="printer_status"/>
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div t-if="record.current_request_id.raw_value">
+                                    <i class="fa fa-cube" title="Solicitud"/> <field name="current_request_id"/>
+                                </div>
+                                <div t-if="!record.current_request_id.raw_value and record.current_workorder_id.raw_value">
+                                    <i class="fa fa-cogs" title="Orden de trabajo"/> <field name="current_workorder_id"/>
+                                </div>
+                                <div t-if="record.current_eta.raw_value">
+                                    <i class="fa fa-clock-o" title="Fin estimado"/> Fin estimado: <field name="current_eta"/>
+                                </div>
+                                <div t-if="record.mounted_lot_id.raw_value" class="mt8">
+                                    <i class="fa fa-circle-o-notch" title="Carrete montado"/> <field name="mounted_lot_id"/>
+                                    (<field name="mounted_lot_remaining_g"/> g)
+                                    <field name="mounted_lot_remaining_pct" widget="progressbar"/>
+                                </div>
+                                <div t-if="!record.mounted_lot_id.raw_value" class="text-muted mt8">Sin carrete montado</div>
+                            </div>
+                            <div class="o_kanban_record_bottom mt8" groups="imago_3dp.group_print_operator">
+                                <div class="oe_kanban_bottom_left">
+                                    <button name="action_open_mount_wizard" type="object" class="btn btn-sm btn-secondary">
+                                        Montar carrete
+                                    </button>
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <button name="action_toggle_out_of_service" type="object" class="btn btn-sm btn-link">
+                                        <t t-if="record.out_of_service.raw_value">Poner en servicio</t>
+                                        <t t-else="">Fuera de servicio</t>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_printer" model="ir.actions.act_window">
+        <field name="name">Impresoras</field>
+        <field name="res_model">mrp.workcenter</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('is_3d_printer', '=', True)]</field>
+        <field name="context">{'default_is_3d_printer': True}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('mrp_workcenter_view_kanban_printer')}),
+            (0, 0, {'view_mode': 'tree', 'view_id': ref('mrp.mrp_workcenter_tree_view')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('mrp.mrp_workcenter_view')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay impresoras 3D</p>
+            <p>Marca "Es impresora 3D" en los centros de trabajo 3DP-01 … 3DP-04 (Manufactura → Configuración → Centros de trabajo).</p>
+        </field>
+    </record>
+
+    <!-- Ocupación de impresoras (tiempos estándar de mrp.workcenter.productivity) -->
+    <record id="view_printer_occupancy_pivot" model="ir.ui.view">
+        <field name="name">mrp.workcenter.productivity.pivot.imago.printer</field>
+        <field name="model">mrp.workcenter.productivity</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <pivot string="Ocupación de impresoras" sample="1">
+                <field name="workcenter_id" type="row"/>
+                <field name="date_start" interval="month" type="col"/>
+                <field name="duration" type="measure" widget="float_time"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_printer_occupancy_graph" model="ir.ui.view">
+        <field name="name">mrp.workcenter.productivity.graph.imago.printer</field>
+        <field name="model">mrp.workcenter.productivity</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <graph string="Ocupación de impresoras" type="bar" stacked="1" sample="1">
+                <field name="date_start" interval="month"/>
+                <field name="workcenter_id"/>
+                <field name="duration" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_printer_occupancy" model="ir.actions.act_window">
+        <field name="name">Ocupación de impresoras</field>
+        <field name="res_model">mrp.workcenter.productivity</field>
+        <field name="view_mode">pivot,graph,tree</field>
+        <field name="domain">[('workcenter_id.is_3d_printer', '=', True)]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_printer_occupancy_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_printer_occupancy_graph')})]"/>
+    </record>
+</odoo>

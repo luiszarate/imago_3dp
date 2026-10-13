@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_spool_mount_wizard_form" model="ir.ui.view">
+        <field name="name">imago.spool.mount.wizard.form</field>
+        <field name="model">imago.spool.mount.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Montar carrete">
+                <group>
+                    <field name="workcenter_id" readonly="1" force_save="1"/>
+                    <field name="lot_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirmar" class="btn-primary"/>
+                    <button string="Descartar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
