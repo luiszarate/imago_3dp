@@ -79,6 +79,8 @@ F1 (dashboard con datos de Odoo) está implementada. Faltan F2 (puente + drivers
 - **Drivers de solo lectura** para la Creality CR-M4 (HTTP puerto 81) y la Flashforge Adventurer 4 (TCP 8899 y cámara MJPEG en el 8080).
 - **Cruce impresora ↔ Odoo** con alertas: impresión no registrada, impresión terminada con intento abierto, error, sin comunicación.
 
+**Impresión combinada** (varias solicitudes en una misma placa) está especificada en `SPEC.md` §17, sin desarrollar.
+
 Los hallazgos del reconocimiento de red y los riesgos de seguridad están en §16.2. El sistema visual del dashboard (tokens, tipografía, modo pantalla) está en [`DESIGN.md`](DESIGN.md); el contexto de producto, en [`PRODUCT.md`](PRODUCT.md).
 
 ## Estructura

@@ -3,12 +3,12 @@
 | Campo | Valor |
 |---|---|
 | Módulo | `imago_3dp` |
-| Versión objetivo | `14.0.1.0.0` (v0.1) · `14.0.2.0.0` (v0.2, sección 16) |
+| Versión objetivo | `14.0.1.0.0` (v0.1) · `14.0.2.0.0` (v0.2, sección 16) · `14.0.2.1.0` (impresión combinada, sección 17) |
 | Plataforma | Odoo 14 Community Edition (Python 3.6–3.8) |
 | Empresa | Imago Aerospace |
 | Documento relacionado | `IMAGO_Holom_Odoo14_MRP_Plan_v0.1.docx` (secciones 4.1, 4.2, 4.4, 6.1) y `IMAGO_Manual_Piloto_MRP_Holom_Odoo14.pdf` |
 | Fecha | 13-Oct-2026 (v0.1) · 21-Oct-2026 (v0.2) |
-| Estado | v0.1 implementada · v0.2 (dashboard del operador, puente local y drivers de impresoras) especificada, pendiente de desarrollo |
+| Estado | v0.1 implementada · v0.2: F1 (dashboard) implementada; F2/F3 (puente, drivers, alertas) especificadas · impresión combinada (sección 17) especificada |
 
 ---
 
@@ -1087,3 +1087,157 @@ Pruebas del puente en `bridge/tests/` (`pytest`):
 | REQ-3DP-110 | Vista de dashboard de solo lectura para solicitantes ("¿cuándo sale mi pieza?"). |
 | REQ-3DP-111 | Disponibilidad (OEE simplificado) por impresora a partir de `imago.printer.event`. |
 | REQ-3DP-112 | Control remoto (pausar/detener). **Fuera de alcance por seguridad**: solo si las impresoras quedan en una red aislada y con confirmación en Odoo. |
+| REQ-3DP-113 | Impresión combinada: varias solicitudes en una misma placa. **→ Especificada en la sección 17.** |
+
+---
+
+## 17. Impresión combinada (REQ-3DP-113)
+
+Versión objetivo `14.0.2.1.0`. No depende de F2 ni de F3 de la sección 16 y puede desarrollarse antes. Todo lo de v0.1 y v0.2 sigue vigente; los "Puntos clave del diseño" de `CLAUDE.md` no cambian. Especificado el 21-Oct-2026, sin código todavía.
+
+### 17.1 Necesidad
+
+Dos o más ingenieros envían solicitudes distintas y el operador ve que caben **en la misma placa** (mismo material, misma impresora, una sola corrida del slicer). Hoy no se puede registrar así:
+- cada intento pertenece a una sola solicitud (`imago.print.job.request_id`, obligatorio);
+- iniciar un intento deja la impresora ocupada (A-07), así que la segunda solicitud no puede arrancar en paralelo.
+
+El atajo actual (cargar todo a una solicitud) sesga el consumo por propósito y deja la otra solicitud sin historial. La impresión combinada registra **una sola corrida física** y conserva **la trazabilidad de cada solicitud**: su MO, sus intentos, sus piezas, su consumo y su estado.
+
+### 17.2 Decisiones de diseño
+
+| ID | Decisión |
+|---|---|
+| D-21 | Nuevo modelo `imago.print.batch` ("Impresión combinada"): agrupa **un intento por solicitud** que comparten impresora, carretes, inicio y fin. Cada solicitud conserva su propio `imago.print.job`. |
+| D-22 | **Una sola WO `[MCH]`** por impresión combinada, en la MO de la solicitud líder (la primera elegida). Así la ocupación de la impresora (`mrp.workcenter.productivity`) se cuenta **una vez** y la regla de impresora ocupada (A-07) no cambia. Los intentos de las demás solicitudes no tienen WO propia. |
+| D-23 | **Reparto** de gramos y minutos por solicitud mediante `share` (fracción 0–1) en cada intento. Por defecto es proporcional a los **gramos estimados** de cada solicitud; si alguna no tiene estimado, se reparte por partes iguales. El operador puede corregirlo al terminar, y la suma debe ser 100 %. |
+| D-24 | El filamento se captura **una vez por carrete** (gramos totales de la placa). Cada carrete se reparte con el mismo `share`, y el consumo de cada solicitud se liga a **su propia MO** (movimiento `raw`, como en v0.1). El último intento absorbe el redondeo, de modo que la suma es exactamente lo capturado. |
+| D-25 | El **resultado es por solicitud**. El asistente propone un resultado de placa y lo copia a cada solicitud, pero cada una lleva su propio resultado, piezas OK y causa de falla. Cada solicitud sigue su flujo de v0.1: `post` si completó sus piezas, `queued` si no. |
+| D-26 | **Indicadores:** los de impresora (tasa de fallos, resultados por impresora, causas de falla, intentos de 7 días del dashboard) cuentan la impresión combinada **una vez**, a través del intento líder. Los de solicitud y propósito (consumo, gramos fallidos, minutos) usan la parte de cada solicitud. |
+| D-27 | La mano de obra (`labor_minutes`) se captura una vez y se reparte con el mismo `share`. Se crea una WO `[LAB]` por solicitud (redondeo a minutos enteros; el último absorbe la diferencia), con lo que la separación `[MCH]` / `[LAB]` se mantiene. |
+| D-28 | Una solicitud que está en una impresión combinada en curso **no se puede cancelar, rechazar ni pedir aclaración**: se lanza un `UserError` que pide terminar primero la impresión combinada, y entonces se puede cancelar esa solicitud. No se permite quitar ni agregar solicitudes a una combinada ya iniciada. |
+| D-29 | El intento individual de v0.1 no cambia. La combinación es opcional y se elige en el mismo asistente **Iniciar impresión**. |
+
+### 17.3 Modelo de datos
+
+#### 17.3.1 `imago.print.batch` (nuevo) — hereda `mail.thread`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `name` | Char | Secuencia `PRB-%(year)s-` padding 4 → `PRB-2026-0001`. Readonly. |
+| `workcenter_id` | M2o mrp.workcenter | req., dominio `is_3d_printer` |
+| `job_ids` | O2m `imago.print.job` (`batch_id`) | un intento por solicitud, al menos 2 |
+| `lead_job_id` | M2o `imago.print.job` | intento de la solicitud líder; dueño de la WO |
+| `workorder_id` | M2o mrp.workorder | related `lead_job_id.workorder_id` |
+| `request_ids` | M2m compute | solicitudes de los intentos |
+| `state` | Selection | `running` (En curso) / `done` (Terminada) |
+| `date_start`, `date_end` | Datetime | |
+| `est_minutes` | Integer | minutos estimados de la **placa completa** (del slicer); req. al iniciar |
+| `operator_id` | M2o res.users | |
+| `company_id` | M2o res.company | todas las solicitudes deben ser de la misma compañía |
+
+Restricciones:
+- una solicitud no puede estar en dos combinadas en curso;
+- todos los intentos de una combinada comparten `workcenter_id`.
+
+#### 17.3.2 Extensión de `imago.print.job`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `batch_id` | M2o `imago.print.batch` | vacío en intentos individuales; `ondelete='restrict'` |
+| `share` | Float | parte de la placa (0–1); 1.0 en intentos individuales |
+| `is_batch_lead` | Boolean compute, store | `batch_id.lead_job_id == self` |
+| `counts_for_printer` | Boolean compute, store | `not batch_id or is_batch_lead`. Filtro de los indicadores de impresora (D-26). |
+| `allocated_minutes` | Float compute, store | `duration_minutes × share` |
+
+`imago.print.request.print_minutes_total` pasa a sumar `allocated_minutes` (es idéntico a v0.1 para intentos individuales).
+
+### 17.4 Flujo
+
+**Iniciar** (asistente `imago.print.job.start.wizard` extendido):
+1. Campo nuevo `extra_request_ids` (M2m, "Imprimir junto con"). Su dominio son las solicitudes `queued` o `post` de la misma compañía, sin intento en curso y distintas de la principal. Vacío = intento individual de v0.1.
+2. Si se eligen solicitudes extra:
+   - aparece una tabla de solo lectura con cada solicitud, sus piezas pendientes, los gramos estimados y el `share` propuesto (D-23);
+   - `est_minutes` pasa a ser el de la placa completa;
+   - los carretes deben ser aceptables para **todas** las solicitudes (`allow_substitute`, materiales compatibles; misma regla de v0.1 aplicada a cada una).
+3. Acción en una transacción:
+   - bloqueo de la impresora y validaciones de v0.1 (libre, no fuera de servicio, carretes con stock);
+   - MO de cada solicitud si no existe (`_ensure_production`);
+   - **una** WO `[MCH] Impresión 3D – PRB-… (PRT-A + PRT-B)` en la MO líder, con `button_start()`;
+   - un `imago.print.job` por solicitud (`batch_id`, `share`, `pieces_planned`, `result='running'`, líneas de consumo de 0 g por carrete);
+   - `imago.print.batch` en `running`;
+   - cada solicitud pasa a `printing` con mensaje en su chatter: "Impresión combinada PRB-… con PRT-B".
+
+**Terminar** (asistente nuevo `imago.print.batch.finish.wizard`, que se abre desde cualquiera de las solicitudes, desde el intento o desde la tarjeta del dashboard):
+
+| Campo | Notas |
+|---|---|
+| `plate_result` | `ok` / `partial` / `failed` / `cancelled`; al cambiar, se copia a cada línea |
+| `failure_reason`, `failure_note` | de la placa; se copian a las líneas que fallaron |
+| `lot_line_ids` | carrete + gramos **totales** de la placa, prellenado con los carretes del inicio; se pueden agregar carretes (runout) |
+| `request_line_ids` | una por solicitud: `result`, `pieces_ok`, `failure_reason`, `share_pct` (editable) |
+| `labor_minutes` | total de la placa |
+
+Validaciones:
+- las de `_validate_finish` de v0.1, aplicadas a cada línea;
+- la suma de `share_pct` debe ser 100 % (tolerancia 0.01), y cada parte debe ser > 0 salvo en las líneas `cancelled`;
+- gramos > 0 en al menos un carrete, salvo que todas las líneas sean `cancelled`.
+
+Acción en una transacción:
+1. Repartir cada carrete por `share` (D-24), crear los consumos de cada intento y contabilizar sus movimientos (`_post_stock_move` de v0.1, uno por consumo y MO).
+2. `button_finish()` de la WO líder.
+3. Escribir resultado, piezas, causa y fecha de fin en cada intento.
+4. WO `[LAB]` por solicitud según D-27.
+5. `_after_job_finished` de cada solicitud.
+6. Avisos de carrete bajo.
+7. Batch en `done`, con mensaje en el chatter de cada solicitud.
+
+La validación de disponibilidad del lote (A-10) se aplica al **total** del carrete, antes de repartir.
+
+### 17.5 Interfaz
+
+- **Solicitud:** en la pestaña "Impresión", los intentos de una combinada muestran el folio `PRB-…`, la parte (%) y las otras solicitudes. El botón **Terminar intento** abre el asistente de la combinada.
+- **Impresión combinada:** formulario de solo lectura (impresora, intentos con su parte y resultado, carretes, WO, chatter). Menú *Impresión 3D → Reportes → Impresiones combinadas* (Operador).
+- **Dashboard (16.10):**
+  - la estación muestra la impresión combinada como "PRB-2026-0001 · PRT-2026-0012 + PRT-2026-0015" (y "+N" si son más de dos);
+  - el avance estimado usa el `est_minutes` de la placa;
+  - el botón **Terminar intento** abre el asistente de la combinada;
+  - la cola marca las solicitudes en combinada.
+- La acción "¿ya terminó?" del dashboard y las alertas de F3 (16.7) se generan **una vez** por impresión combinada.
+
+### 17.6 Seguridad
+
+- Iniciar y terminar combinadas: solo el grupo Operador, igual que los intentos de v0.1.
+- `imago.print.batch`: lectura para Solicitante (para ver con quién comparte placa su solicitud); lectura, creación y escritura para Operador; eliminación para Responsable, y solo sin consumos contabilizados.
+- Los consumos contabilizados siguen siendo inmutables, y una combinada con consumo contabilizado no se borra.
+
+### 17.7 Puntos [VERIFICAR]
+
+| ID | Punto | Cómo verificar / fallback |
+|---|---|---|
+| V-08 | Una MO sin WO, que solo tiene consumos `raw` ya contabilizados, se cierra con `button_mark_done()` en Odoo 14 (solicitudes no líderes). | Probar en la base de pruebas. Fallback: crear en cada MO no líder una WO `[MCH]` de 0 minutos, marcada hecha al terminar y sin registro de productividad, para que la ocupación no se duplique. |
+| V-09 | Que la MO líder se pueda cerrar o cancelar sin afectar a las demás (cada una tiene sus propios consumos). | Probar entregar la líder antes que las demás y al revés. |
+| V-10 | Redondeo del reparto con la UdM gramo (precisión de `Product Unit of Measure`): la suma de los consumos debe igualar lo capturado. | Prueba con 100 g en tres partes de 33.33 %. |
+
+### 17.8 Criterios de aceptación
+
+| ID | Criterio |
+|---|---|
+| A-31 | Iniciar con dos solicitudes en cola en una impresora libre crea una impresión combinada `running`, un intento `running` por solicitud y **una sola** WO `[MCH]` en progreso en la MO líder. Ambas solicitudes quedan en `printing`. |
+| A-32 | No se puede combinar si una solicitud no está en `queued`/`post`, si ya tiene un intento en curso o es de otra compañía, si la impresora está ocupada o fuera de servicio, o si un carrete no lo acepta una solicitud sin sustitutos. |
+| A-33 | El reparto por defecto de dos solicitudes con 60 g y 40 g estimados es 60/40 %; sin estimados, 50/50 %. El asistente rechaza un reparto que no sume 100 %. |
+| A-34 | Terminar con 100 g del carrete X y reparto 60/40 descuenta exactamente 100 g del lote y crea consumos de 60 g y 40 g ligados a la MO de cada solicitud. Con tres partes iguales, la suma de los consumos es 100 g exactos. |
+| A-35 | Con dos carretes (runout) de 70 g y 30 g y reparto 60/40, cada lote se reparte con 60/40 (42/28 y 18/12). |
+| A-36 | Resultado mixto: A `ok` con sus piezas completas pasa a `post`; B `failed` vuelve a `queued`, y su parte cuenta en `grams_failed` de B y no en la de A. |
+| A-37 | La productividad de la impresora registra la duración de la placa **una vez**. `print_minutes_total` de cada solicitud es su parte (`allocated_minutes`). |
+| A-38 | La tasa de fallos y los resultados por impresora (reportes v0.1 y dashboard) cuentan una placa fallida combinada como **un** intento. |
+| A-39 | `labor_minutes = 30` con reparto 60/40 crea WOs `[LAB]` de 18 y 12 min, cada una en la MO de su solicitud. |
+| A-40 | Cancelar, rechazar o pedir aclaración en una solicitud con combinada en curso lanza `UserError`; después de terminar la combinada sí se puede. |
+| A-41 | Un Solicitante no puede iniciar ni terminar combinadas y sí puede leer la combinada de su propia solicitud. |
+| A-42 | El dashboard muestra en la estación la combinada con sus solicitudes, y **Terminar intento** abre el asistente de la combinada. La acción "¿ya terminó?" aparece una sola vez. |
+| A-43 | Los intentos individuales de v0.1 se comportan igual que antes: las 80 pruebas existentes pasan, y el módulo actualiza desde 14.0.2.0.0 sin perder datos (`share = 1`, `counts_for_printer = True` en los intentos existentes). |
+
+### 17.9 Fuera de alcance
+
+- Combinar solicitudes en **impresoras distintas** (eso son intentos individuales en paralelo).
+- Agregar o quitar solicitudes de una combinada ya iniciada.
+- Reparto por volumen o por tiempo de pieza leído del G-code/3MF (ligado a REQ-3DP-102).
