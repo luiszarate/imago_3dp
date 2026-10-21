@@ -124,9 +124,12 @@
                                       decoration-warning="result == 'partial'">
                                     <field name="name"/>
                                     <field name="workcenter_id"/>
+                                    <field name="batch_id" optional="show"/>
+                                    <field name="share" widget="percentage" optional="show"/>
                                     <field name="date_start"/>
                                     <field name="date_end"/>
                                     <field name="duration_minutes" sum="Total"/>
+                                    <field name="allocated_minutes" sum="Total" optional="hide"/>
                                     <field name="pieces_ok" sum="Total"/>
                                     <field name="grams_total" sum="Total"/>
                                     <field name="result"/>

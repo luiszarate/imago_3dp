@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_print_batch_tree" model="ir.ui.view">
+        <field name="name">imago.print.batch.tree</field>
+        <field name="model">imago.print.batch</field>
+        <field name="arch" type="xml">
+            <tree string="Impresiones combinadas" decoration-info="state == 'running'" create="false">
+                <field name="name"/>
+                <field name="workcenter_id"/>
+                <field name="request_ids" widget="many2many_tags"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="operator_id"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_print_batch_form" model="ir.ui.view">
+        <field name="name">imago.print.batch.form</field>
+        <field name="model">imago.print.batch</field>
+        <field name="arch" type="xml">
+            <form string="Impresión combinada" create="false" edit="false">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="workcenter_id"/>
+                            <field name="workorder_id" groups="imago_3dp.group_print_operator"/>
+                            <field name="operator_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="est_minutes"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <field name="job_ids">
+                        <tree decoration-info="result == 'running'" decoration-danger="result == 'failed'"
+                              decoration-warning="result == 'partial'">
+                            <field name="request_id"/>
+                            <field name="name"/>
+                            <field name="is_batch_lead"/>
+                            <field name="share" widget="percentage"/>
+                            <field name="pieces_planned"/>
+                            <field name="pieces_ok"/>
+                            <field name="grams_total" sum="Total"/>
+                            <field name="allocated_minutes" sum="Total"/>
+                            <field name="result"/>
+                            <field name="failure_reason"/>
+                        </tree>
+                    </field>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_print_batch_search" model="ir.ui.view">
+        <field name="name">imago.print.batch.search</field>
+        <field name="model">imago.print.batch</field>
+        <field name="arch" type="xml">
+            <search string="Impresiones combinadas">
+                <field name="name"/>
+                <field name="workcenter_id"/>
+                <field name="job_ids" string="Solicitud" filter_domain="[('job_ids.request_id', 'ilike', self)]"/>
+                <filter name="running" string="En curso" domain="[('state', '=', 'running')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_printer" string="Impresora" context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_month" string="Mes" context="{'group_by': 'date_start:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_print_batch" model="ir.actions.act_window">
+        <field name="name">Impresiones combinadas</field>
+        <field name="res_model">imago.print.batch</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_print_batch_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Todavía no hay impresiones combinadas.</p>
+            <p>Se crean al iniciar una impresión con varias solicitudes en "Imprimir junto con".</p>
+        </field>
+    </record>
+</odoo>

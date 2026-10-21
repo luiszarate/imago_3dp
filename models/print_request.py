@@ -112,13 +112,14 @@ class PrintRequest(models.Model):
             request.pieces_ok = sum(request.job_ids.mapped('pieces_ok'))
             request.pieces_pending = max(request.qty_pieces - request.pieces_ok, 0)
 
-    @api.depends('job_ids.grams_total', 'job_ids.result', 'job_ids.duration_minutes')
+    @api.depends('job_ids.grams_total', 'job_ids.result', 'job_ids.allocated_minutes')
     def _compute_totals(self):
         for request in self:
             jobs = request.job_ids
             request.grams_total = sum(jobs.mapped('grams_total'))
             request.grams_failed = sum(jobs.filtered(lambda j: j.result == 'failed').mapped('grams_total'))
-            request.print_minutes_total = sum(jobs.mapped('duration_minutes'))
+            # A combined print counts only this request's share of the plate time (SPEC 17, D-23).
+            request.print_minutes_total = sum(jobs.mapped('allocated_minutes'))
 
     def _compute_user_is_operator(self):
         is_operator = self._is_print_operator()
@@ -281,6 +282,9 @@ class PrintRequest(models.Model):
                 request.sudo()._do_cancel()
                 continue
             running = request.job_ids.filtered(lambda j: j.result == 'running')
+            if running.batch_id:
+                raise UserError(_('La solicitud %(name)s está en la impresión combinada %(batch)s: termínala '
+                                  'antes de cancelar.', name=request.name, batch=running.batch_id.name))
             if running:
                 if len(self) > 1:
                     raise UserError(_('La solicitud %s tiene un intento en curso: cancélala individualmente.')
@@ -374,6 +378,8 @@ class PrintRequest(models.Model):
         running = self.job_ids.filtered(lambda j: j.result == 'running')
         if not running:
             raise UserError(_('No hay un intento en curso para la solicitud %s.') % self.name)
+        if running[0].batch_id:
+            return running[0].batch_id._action_open_finish_wizard()
         return running[0]._action_open_finish_wizard()
 
     def action_deliver(self):
@@ -411,9 +417,24 @@ class PrintRequest(models.Model):
         self._check_state(('queued', 'post'), _('iniciar un intento de'))
         self._check_start_conditions(workcenter, lots, pieces_planned)
         production = self._ensure_production()
-        attempt_no = max(self.job_ids.mapped('attempt_no') or [0]) + 1
+        attempt_no = self._next_attempt_no()
+        workorder = self._create_machine_workorder(
+            production, workcenter, _('[MCH] Impresión 3D – %s – intento %s') % (self.name, attempt_no),
+            est_minutes)
+        job = self._create_job(workcenter, lots, pieces_planned, attempt_no, workorder,
+                               est_grams=est_grams, est_minutes=est_minutes)
+        self._after_job_started(job, workcenter, lots)
+        return job
+
+    def _next_attempt_no(self):
+        self.ensure_one()
+        return max(self.job_ids.mapped('attempt_no') or [0]) + 1
+
+    @api.model
+    def _create_machine_workorder(self, production, workcenter, name, est_minutes):
+        """[MCH] work order on ``production``, started (its timer is the printer occupancy)."""
         workorder = self.env['mrp.workorder'].create({
-            'name': _('[MCH] Impresión 3D – %s – intento %s') % (self.name, attempt_no),
+            'name': name,
             'production_id': production.id,
             'workcenter_id': workcenter.id,
             'product_uom_id': production.product_uom_id.id,
@@ -422,7 +443,14 @@ class PrintRequest(models.Model):
             'state': 'ready',
         })
         workorder.button_start()
-        job = self.env['imago.print.job'].create({
+        return workorder
+
+    def _create_job(self, workcenter, lots, pieces_planned, attempt_no, workorder, est_grams=0.0, est_minutes=0,
+                    batch=False, share=1.0):
+        """Running attempt with a 0 g consumption line per spool (grams are captured at the end).
+        Attempts of a combined print other than the lead one have no work order (SPEC 17, D-22)."""
+        self.ensure_one()
+        return self.env['imago.print.job'].create({
             'request_id': self.id,
             'attempt_no': attempt_no,
             'workcenter_id': workcenter.id,
@@ -433,20 +461,31 @@ class PrintRequest(models.Model):
             'est_minutes': est_minutes,
             'date_start': fields.Datetime.now(),
             'result': 'running',
+            'batch_id': batch.id if batch else False,
+            'share': share,
             'consumption_ids': [
                 (0, 0, {'lot_id': lot.id, 'grams': 0.0, 'workorder_id': workorder.id}) for lot in lots
             ],
         })
+
+    def _after_job_started(self, job, workcenter, lots, batch=False):
+        self.ensure_one()
         mounted = workcenter.mounted_lot_id if workcenter.mounted_lot_id in lots else lots[0]
         workcenter._mount_lot(mounted)
         workcenter._invalidate_printer_status()
         self._set_state({'state': 'printing'})
         self._warn_material_compatibility(workcenter)
+        if batch:
+            others = batch.request_ids - self
+            self.message_post(body=_(
+                'Intento %(attempt)s iniciado en %(printer)s dentro de la impresión combinada %(batch)s '
+                'con %(others)s.', attempt=job.name, printer=html_escape(workcenter.display_name),
+                batch=html_escape(batch.name), others=html_escape(', '.join(others.mapped('name')))))
+            return
         self.message_post(body=_(
             'Intento %(attempt)s iniciado en %(printer)s con carrete(s) %(lots)s.',
             attempt=job.name, printer=html_escape(workcenter.display_name),
             lots=html_escape(', '.join(lots.mapped('name')))))
-        return job
 
     def _check_start_conditions(self, workcenter, lots, pieces_planned):
         if not workcenter or not workcenter.is_3d_printer:

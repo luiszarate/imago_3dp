@@ -22,6 +22,16 @@
                         <field name="est_minutes"/>
                     </group>
                 </group>
+                <field name="allowed_extra_request_ids" invisible="1"/>
+                <group string="Impresión combinada">
+                    <field name="extra_request_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    <field name="combined_summary" nolabel="1" colspan="2"
+                           attrs="{'invisible': [('extra_request_ids', '=', [])]}"/>
+                </group>
+                <p class="text-muted" attrs="{'invisible': [('extra_request_ids', '=', [])]}">
+                    Las piezas y los gramos de arriba son de la solicitud principal. En "Minutos estimados" indica
+                    el tiempo del slicer para la placa completa.
+                </p>
                 <field name="lot_ids" options="{'no_create': True}">
                     <tree>
                         <field name="name"/>

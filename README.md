@@ -2,7 +2,7 @@
 
 Módulo de Odoo 14 Community para Imago Aerospace. Gestiona las **solicitudes de impresión 3D** de ingeniería, las **4 impresoras** (como centros de trabajo de MRP) y el **inventario de filamento por carrete** (un lote = un carrete), con consumo real en gramos, incluidos los intentos fallidos.
 
-- Versión: `14.0.2.0.0` · Licencia LGPL-3 · Depende de `mrp`, `stock`, `mail` (sin Enterprise, sin `purchase`).
+- Versión: `14.0.2.1.0` · Licencia LGPL-3 · Depende de `mrp`, `stock`, `mail` (sin Enterprise, sin `purchase`).
 - Especificación y decisiones técnicas: [`SPEC.md`](SPEC.md) (la sección 14 registra cada punto [VERIFICAR]).
 
 ## Qué hace
@@ -14,6 +14,12 @@ Módulo de Odoo 14 Community para Imago Aerospace. Gestiona las **solicitudes de
 | Responsable de impresión 3D | Todo lo anterior + catálogos (filamentos, materiales, propósitos), borrar y **reabrir** solicitudes. |
 
 Flujo de estados: `Borrador → Enviada → (Aclarar) → En cola → Imprimiendo → Post-proceso → Entregada` (+ `Rechazada`, `Cancelada`). Un intento incompleto regresa la solicitud a *En cola*; al completar las piezas pasa a *Post-proceso*.
+
+### Impresión combinada (varias solicitudes en una placa)
+- En **Iniciar impresión**, el campo *Imprimir junto con* agrega otras solicitudes en cola que van en la misma placa. Se crea una **impresión combinada** (`PRB-2026-0001`) con un intento por solicitud y **una sola** WO `[MCH]` (la ocupación de la impresora no se duplica).
+- **Terminar intento** abre un asistente único: gramos por carrete de toda la placa, resultado y piezas por solicitud y el **reparto** (por defecto proporcional a los gramos estimados, editable; debe sumar 100 %). Gramos, minutos de máquina y mano de obra se reparten con esa proporción y cada consumo va a la MO de su solicitud.
+- Los indicadores por impresora cuentan la placa una vez; los de solicitud y propósito usan la parte de cada una. Mientras la placa está en curso no se puede cancelar ni terminar una de sus solicitudes por separado.
+- Consulta: *Reportes → Impresiones combinadas*. Detalle en `SPEC.md` §17.
 
 ### Integración con MRP / Inventario
 - Cada solicitud genera **una MO** del producto genérico *Prototipo impreso 3D*; cada intento genera **una WO `[MCH]`** en la impresora usada (la ocupación de impresoras es la misma para producción y prototipos). Los minutos de mano de obra crean una WO **`[LAB]`** en el centro de mano de obra con su registro de productividad.
@@ -50,7 +56,7 @@ Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-80 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad) y A-19/A-30 del dashboard (`test_dashboard.py`).
+97 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`) y A-31…A-43 de la impresión combinada (`test_combined.py`).
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test
@@ -79,22 +85,20 @@ F1 (dashboard con datos de Odoo) está implementada. Faltan F2 (puente + drivers
 - **Drivers de solo lectura** para la Creality CR-M4 (HTTP puerto 81) y la Flashforge Adventurer 4 (TCP 8899 y cámara MJPEG en el 8080).
 - **Cruce impresora ↔ Odoo** con alertas: impresión no registrada, impresión terminada con intento abierto, error, sin comunicación.
 
-**Impresión combinada** (varias solicitudes en una misma placa) está especificada en `SPEC.md` §17, sin desarrollar.
-
 Los hallazgos del reconocimiento de red y los riesgos de seguridad están en §16.2. El sistema visual del dashboard (tokens, tipografía, modo pantalla) está en [`DESIGN.md`](DESIGN.md); el contexto de producto, en [`PRODUCT.md`](PRODUCT.md).
 
 ## Estructura
 ```
-models/    filament_material, print_purpose, print_request, print_job, print_consumption,
+models/    filament_material, print_purpose, print_request, print_job, print_batch, print_consumption,
            product_template, stock_production_lot, stock_move, stock_picking,
            mrp_workcenter, mrp_production, mrp_workorder, res_company, res_config_settings,
            print_dashboard (+ print_dashboard_charts)
-wizards/   request_message, job_start, job_finish, workorder_filament,
+wizards/   request_message, job_start, job_finish, batch_finish, workorder_filament,
            spool_receive, spool_weigh, spool_mount (+ vistas)
 views/     solicitudes, intentos, consumo, filamento/carretes, impresoras, WO, recepción, ajustes,
            dashboard (acción cliente), assets, menús
 static/    src/js (dashboard + gráficas), src/xml (plantillas QWeb), src/scss, lib/echarts (5.5.1, Apache-2.0)
 security/  grupos, reglas de registro, ACL
 data/      secuencias, materiales, propósitos, producto genérico, tipos de actividad
-tests/     common, test_request_flow, test_consumption, test_spools, test_security, test_dashboard
+tests/     common, test_request_flow, test_consumption, test_spools, test_security, test_dashboard, test_combined
 ```

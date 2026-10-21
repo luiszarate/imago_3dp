@@ -18,6 +18,13 @@ class JobStartWizard(models.TransientModel):
     lot_ids = fields.Many2many(
         'stock.production.lot', 'imago_job_start_wizard_lot_rel', 'wizard_id', 'lot_id',
         string='Carretes', domain="[('id', 'in', allowed_lot_ids)]")
+    extra_request_ids = fields.Many2many(
+        'imago.print.request', 'imago_job_start_wizard_extra_rel', 'wizard_id', 'request_id',
+        string='Imprimir junto con', domain="[('id', 'in', allowed_extra_request_ids)]",
+        help='Otras solicitudes que van en la misma placa (impresión combinada).')
+    allowed_extra_request_ids = fields.Many2many(
+        'imago.print.request', string='Solicitudes combinables', compute='_compute_allowed_extra_request_ids')
+    combined_summary = fields.Text(string='Reparto de la placa', compute='_compute_combined_summary')
     pieces_planned = fields.Integer(string='Piezas planeadas')
     est_grams = fields.Float(string='Gramos estimados')
     est_minutes = fields.Integer(string='Minutos estimados')
@@ -52,10 +59,51 @@ class JobStartWizard(models.TransientModel):
             domain.append(('product_id', '=', request.filament_product_id.id))
         return self.env['stock.production.lot'].search(domain)
 
-    @api.depends('request_id')
+    @api.depends('request_id', 'extra_request_ids')
     def _compute_allowed_lot_ids(self):
         for wizard in self:
-            wizard.allowed_lot_ids = self._allowed_lots(wizard.request_id) if wizard.request_id else False
+            if not wizard.request_id:
+                wizard.allowed_lot_ids = False
+                continue
+            lots = self._allowed_lots(wizard.request_id)
+            for extra in wizard.extra_request_ids:
+                # A combined plate needs spools every request accepts (SPEC 17.4).
+                lots &= self._allowed_lots(extra)
+            wizard.allowed_lot_ids = lots
+
+    @api.depends('request_id')
+    def _compute_allowed_extra_request_ids(self):
+        Request = self.env['imago.print.request']
+        for wizard in self:
+            request = wizard.request_id
+            if not request:
+                wizard.allowed_extra_request_ids = False
+                continue
+            candidates = Request.search([
+                ('state', 'in', ('queued', 'post')),
+                ('company_id', '=', request.company_id.id),
+                ('id', '!=', request.id),
+            ])
+            wizard.allowed_extra_request_ids = candidates.filtered(
+                lambda r: not r.job_ids.filtered(lambda j: j.result == 'running'))
+
+    @api.depends('request_id', 'extra_request_ids', 'pieces_planned')
+    def _compute_combined_summary(self):
+        Batch = self.env['imago.print.batch']
+        for wizard in self:
+            requests = wizard.request_id | wizard.extra_request_ids
+            if not wizard.extra_request_ids:
+                wizard.combined_summary = False
+                continue
+            shares = Batch._default_shares(requests)
+            lines = []
+            for request in requests:
+                pieces = wizard.pieces_planned if request == wizard.request_id else (
+                    request.pieces_pending or request.qty_pieces)
+                lines.append(_('%(name)s · %(title)s · %(pieces)s pza · %(grams).0f g est. · %(pct).0f %%') % {
+                    'name': request.name, 'title': request.title, 'pieces': pieces,
+                    'grams': request.est_grams, 'pct': shares[request] * 100.0})
+            wizard.combined_summary = '\n'.join(lines)
 
     @api.onchange('workcenter_id')
     def _onchange_workcenter_id(self):
@@ -63,15 +111,16 @@ class JobStartWizard(models.TransientModel):
         if lot and lot in self.allowed_lot_ids and lot not in self.lot_ids:
             self.lot_ids = [(6, 0, lot.ids)]
 
-    @api.depends('lot_ids', 'est_grams', 'workcenter_id')
+    @api.depends('lot_ids', 'est_grams', 'workcenter_id', 'extra_request_ids')
     def _compute_warning_text(self):
         for wizard in self:
             warnings = []
             available = sum(wizard.lot_ids.mapped('spool_remaining_g'))
-            if wizard.lot_ids and float_compare(available, wizard.est_grams, precision_digits=2) < 0:
+            needed = wizard.est_grams + sum(wizard.extra_request_ids.mapped('est_grams'))
+            if wizard.lot_ids and float_compare(available, needed, precision_digits=2) < 0:
                 warnings.append(_(
                     'Los carretes seleccionados tienen %(available).1f g y el estimado es %(est).1f g.',
-                    available=available, est=wizard.est_grams))
+                    available=available, est=needed))
             printer = wizard.workcenter_id
             if printer.printer_status == 'printing':
                 warnings.append(_('La impresora está ocupada con %s.') % printer.current_workorder_id.display_name)
@@ -82,6 +131,11 @@ class JobStartWizard(models.TransientModel):
 
     def action_start(self):
         self.ensure_one()
+        if self.extra_request_ids:
+            self.env['imago.print.batch']._start_combined(
+                self.request_id | self.extra_request_ids, self.workcenter_id, self.lot_ids, self.est_minutes,
+                pieces={self.request_id: self.pieces_planned})
+            return {'type': 'ir.actions.act_window_close'}
         self.request_id._start_job(
             self.workcenter_id, self.lot_ids, self.pieces_planned,
             est_grams=self.est_grams, est_minutes=self.est_minutes)

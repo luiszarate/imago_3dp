@@ -258,6 +258,11 @@ var PrintDashboard = AbstractAction.extend({
             eta_label: card.eta ? this._formatTime(card.eta) : '',
             next_in_queue: card.status === 'free' && _.findWhere(queue, {state: 'queued', printer_id: card.id}),
         });
+        if (card.batch) {
+            var names = _.pluck(card.batch.requests, 'name');
+            view.batch_label = names.length > 2 ?
+                names.slice(0, 2).join(' + ') + ' +' + (names.length - 2) : names.join(' + ');
+        }
         if (card.job) {
             view.job_g = Math.round(card.job.est_grams);
             view.progress_label = Math.round(card.job.progress_est);

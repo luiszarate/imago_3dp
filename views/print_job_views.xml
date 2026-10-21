@@ -9,6 +9,7 @@
                 <field name="name"/>
                 <field name="request_id"/>
                 <field name="workcenter_id"/>
+                <field name="batch_id" optional="show"/>
                 <field name="operator_id" widget="many2one_avatar_user" optional="show"/>
                 <field name="date_start"/>
                 <field name="date_end" optional="show"/>
@@ -47,11 +48,14 @@
                             <field name="operator_id"/>
                             <field name="workorder_id" groups="imago_3dp.group_print_operator"/>
                             <field name="labor_workorder_id" groups="imago_3dp.group_print_operator"/>
+                            <field name="batch_id" attrs="{'invisible': [('batch_id', '=', False)]}"/>
+                            <field name="share" widget="percentage" attrs="{'invisible': [('batch_id', '=', False)]}"/>
                         </group>
                         <group>
                             <field name="date_start"/>
                             <field name="date_end"/>
                             <field name="duration_minutes"/>
+                            <field name="allocated_minutes" attrs="{'invisible': [('batch_id', '=', False)]}"/>
                             <field name="est_minutes"/>
                             <field name="labor_minutes"/>
                         </group>
@@ -162,6 +166,8 @@
         <field name="view_mode">pivot,graph,tree</field>
         <field name="search_view_id" ref="view_print_job_search"/>
         <field name="context">{'search_default_finished': 1}</field>
+        <!-- A combined print counts once per printer (SPEC 17, D-26). -->
+        <field name="domain">[('counts_for_printer', '=', True)]</field>
     </record>
 
     <record id="action_print_job_failure_rate_pivot" model="ir.actions.act_window.view">

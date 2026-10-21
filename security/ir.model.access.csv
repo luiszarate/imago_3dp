@@ -23,3 +23,9 @@ access_spool_receive_wizard,imago.spool.receive.wizard,model_imago_spool_receive
 access_spool_receive_wizard_line,imago.spool.receive.wizard.line,model_imago_spool_receive_wizard_line,group_print_operator,1,1,1,1
 access_spool_weigh_wizard,imago.spool.weigh.wizard,model_imago_spool_weigh_wizard,group_print_operator,1,1,1,0
 access_spool_mount_wizard,imago.spool.mount.wizard,model_imago_spool_mount_wizard,group_print_operator,1,1,1,0
+access_print_batch_requester,imago.print.batch requester,model_imago_print_batch,group_print_requester,1,0,0,0
+access_print_batch_operator,imago.print.batch operator,model_imago_print_batch,group_print_operator,1,1,1,0
+access_print_batch_manager,imago.print.batch manager,model_imago_print_batch,group_print_manager,1,1,1,1
+access_batch_finish_wizard,imago.print.batch.finish.wizard,model_imago_print_batch_finish_wizard,group_print_operator,1,1,1,0
+access_batch_finish_wizard_lot,imago.print.batch.finish.wizard.lot,model_imago_print_batch_finish_wizard_lot,group_print_operator,1,1,1,1
+access_batch_finish_wizard_request,imago.print.batch.finish.wizard.request,model_imago_print_batch_finish_wizard_request,group_print_operator,1,1,1,1

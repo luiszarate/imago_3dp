@@ -4,3 +4,4 @@ from . import test_consumption
 from . import test_spools
 from . import test_security
 from . import test_dashboard
+from . import test_combined

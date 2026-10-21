@@ -27,6 +27,8 @@
               action="action_print_job_failure_rate" sequence="20"/>
     <menuitem id="menu_print3d_report_consumption" name="Consumo de filamento" parent="menu_print3d_reports"
               action="action_print_consumption_report" sequence="30"/>
+    <menuitem id="menu_print3d_report_batches" name="Impresiones combinadas" parent="menu_print3d_reports"
+              action="action_print_batch" sequence="35"/>
     <menuitem id="menu_print3d_report_occupancy" name="Ocupación de impresoras" parent="menu_print3d_reports"
               action="action_printer_occupancy" sequence="40"/>
 

@@ -54,6 +54,7 @@ class PrintDashboardCharts(models.AbstractModel):
         groups = self.env['imago.print.job'].read_group([
             ('result', 'in', ('partial', 'failed')),
             ('failure_reason', '!=', False),
+            ('counts_for_printer', '=', True),
             ('date_end', '>=', now - timedelta(days=CHART_DAYS)),
         ], ['failure_reason'], ['failure_reason'])
         labels = dict(FAILURE_REASONS)
@@ -68,6 +69,7 @@ class PrintDashboardCharts(models.AbstractModel):
         groups = self.env['imago.print.job'].read_group([
             ('workcenter_id', 'in', printers.ids),
             ('result', 'in', FINISHED_RESULTS),
+            ('counts_for_printer', '=', True),
             ('date_end', '>=', now - timedelta(days=CHART_DAYS)),
         ], ['workcenter_id', 'result'], ['workcenter_id', 'result'], lazy=False)
         counts = defaultdict(int)

@@ -58,6 +58,19 @@ class PrintJob(models.Model):
         help='1 si el intento falló; sumar para obtener la tasa de fallos.')
     company_id = fields.Many2one(related='request_id.company_id', string='Compañía', store=True)
     purpose_id = fields.Many2one(related='request_id.purpose_id', string='Propósito', store=True)
+    # Combined print (SPEC 17): one attempt per request sharing a plate.
+    batch_id = fields.Many2one(
+        'imago.print.batch', string='Impresión combinada', ondelete='restrict', index=True, readonly=True,
+        copy=False)
+    share = fields.Float(string='Parte de la placa', digits=(16, 4), default=1.0, readonly=True,
+                         help='Fracción de la placa que corresponde a esta solicitud (1 = intento individual).')
+    is_batch_lead = fields.Boolean(string='Intento líder', compute='_compute_batch_flags', store=True)
+    counts_for_printer = fields.Boolean(
+        string='Cuenta para la impresora', compute='_compute_batch_flags', store=True,
+        help='Los indicadores por impresora cuentan una impresión combinada una sola vez.')
+    allocated_minutes = fields.Float(
+        string='Minutos asignados', compute='_compute_allocated_minutes', store=True,
+        help='Duración por la parte de la placa de esta solicitud.')
 
     @api.depends('request_id.name', 'attempt_no')
     def _compute_name(self):
@@ -76,6 +89,17 @@ class PrintJob(models.Model):
     def _compute_grams_total(self):
         for job in self:
             job.grams_total = sum(job.consumption_ids.mapped('grams'))
+
+    @api.depends('batch_id', 'batch_id.lead_job_id')
+    def _compute_batch_flags(self):
+        for job in self:
+            job.is_batch_lead = bool(job.batch_id) and job.batch_id.lead_job_id == job
+            job.counts_for_printer = not job.batch_id or job.is_batch_lead
+
+    @api.depends('duration_minutes', 'share')
+    def _compute_allocated_minutes(self):
+        for job in self:
+            job.allocated_minutes = job.duration_minutes * job.share
 
     @api.depends('result')
     def _compute_failure_count(self):
@@ -115,15 +139,22 @@ class PrintJob(models.Model):
         self.request_id._check_operator()
         if self.result != 'running':
             raise UserError(_('El intento %s ya fue terminado.') % self.name)
+        if self.batch_id:
+            return self.batch_id._action_open_finish_wizard()
         return self._action_open_finish_wizard()
 
     def _finish(self, result, pieces_ok, lines, failure_reason=False, failure_note=False, labor_minutes=0,
-                cancelling=False):
+                cancelling=False, from_batch=False):
         """Close a running attempt.
 
         :param lines: iterable of (lot, grams) captured by the operator.
+        :param from_batch: only ``imago.print.batch._finish_combined`` closes the attempts of a
+            combined print, all together (private parameter, not reachable through RPC).
         """
         self.ensure_one()
+        if self.batch_id and not from_batch:
+            raise UserError(_('El intento %(job)s es parte de la impresión combinada %(batch)s: termínala '
+                              'completa desde [Terminar intento].', job=self.name, batch=self.batch_id.name))
         self._validate_finish(result, pieces_ok, lines, failure_reason, failure_note, labor_minutes)
         self._apply_consumption_lines(lines)
         self.consumption_ids._post_stock_move()

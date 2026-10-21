@@ -116,7 +116,14 @@
             </div>
 
             <div class="o_p3d_station_body">
-                <t t-if="printer.request">
+                <t t-if="printer.batch">
+                    <a href="#" class="o_p3d_open o_p3d_station_job" data-model="imago.print.batch"
+                       t-att-data-id="printer.batch.id">
+                        <strong t-esc="printer.batch.name"/> · <t t-esc="printer.batch_label"/>
+                    </a>
+                    <span class="o_p3d_muted">Impresión combinada de <t t-esc="printer.batch.requests.length"/> solicitudes</span>
+                </t>
+                <t t-elif="printer.request">
                     <a href="#" class="o_p3d_open o_p3d_station_job" data-model="imago.print.request"
                        t-att-data-id="printer.request.id">
                         <strong t-esc="printer.request.name"/> · <t t-esc="printer.request.title"/>

@@ -73,7 +73,8 @@ class PrintDashboard(models.AbstractModel):
             'job': self._job_info(job, now) if job else False,
             'eta': fields.Datetime.to_string(printer.current_eta) if printer.current_eta else False,
             'spool': self._spool_info(spool) if spool else False,
-            'filament_warning': bool(job and spool and job.est_grams > spool.spool_remaining_g),
+            'batch': self._batch_info(job.batch_id) if job.batch_id else False,
+            'filament_warning': bool(job and spool and self._plate_grams(job) > spool.spool_remaining_g),
             'recent_jobs': self._recent_jobs(printer),
         }
 
@@ -93,6 +94,19 @@ class PrintDashboard(models.AbstractModel):
         }
 
     @api.model
+    def _batch_info(self, batch):
+        return {
+            'id': batch.id,
+            'name': batch.name,
+            'requests': [{'id': r.id, 'name': r.name, 'title': r.title} for r in batch.request_ids],
+        }
+
+    @api.model
+    def _plate_grams(self, job):
+        """Estimated grams of everything on the plate (all requests of a combined print)."""
+        return sum(job.batch_id.job_ids.mapped('est_grams')) if job.batch_id else job.est_grams
+
+    @api.model
     def _job_info(self, job, now):
         elapsed = (now - job.date_start).total_seconds() / 60.0 if job.date_start else 0.0
         progress = min(elapsed / job.est_minutes * 100.0, PROGRESS_EST_CAP) if job.est_minutes else 0.0
@@ -102,7 +116,7 @@ class PrintDashboard(models.AbstractModel):
             'date_start': fields.Datetime.to_string(job.date_start) if job.date_start else False,
             'elapsed_minutes': round(elapsed),
             'est_minutes': job.est_minutes,
-            'est_grams': job.est_grams,
+            'est_grams': self._plate_grams(job),
             'progress_est': round(progress, 1),
             'overdue': bool(job.est_minutes and elapsed > job.est_minutes),
         }
@@ -120,7 +134,7 @@ class PrintDashboard(models.AbstractModel):
 
     def _recent_jobs(self, printer):
         jobs = self.env['imago.print.job'].search(
-            [('workcenter_id', '=', printer.id), ('result', '!=', 'running')],
+            [('workcenter_id', '=', printer.id), ('result', '!=', 'running'), ('counts_for_printer', '=', True)],
             order='date_end desc, id desc', limit=RECENT_JOBS)
         results = dict(jobs._fields['result'].selection)
         reasons = dict(FAILURE_REASONS)
@@ -188,6 +202,7 @@ class PrintDashboard(models.AbstractModel):
         Request = self.env['imago.print.request']
         jobs = self.env['imago.print.job'].search([
             ('result', 'in', FINISHED_RESULTS),
+            ('counts_for_printer', '=', True),
             ('date_end', '>=', now - timedelta(days=KPI_DAYS)),
         ])
         failed = len(jobs.filtered(lambda job: job.result == 'failed'))

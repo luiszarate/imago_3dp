@@ -8,7 +8,7 @@
 | Empresa | Imago Aerospace |
 | Documento relacionado | `IMAGO_Holom_Odoo14_MRP_Plan_v0.1.docx` (secciones 4.1, 4.2, 4.4, 6.1) y `IMAGO_Manual_Piloto_MRP_Holom_Odoo14.pdf` |
 | Fecha | 13-Oct-2026 (v0.1) · 21-Oct-2026 (v0.2) |
-| Estado | v0.1 implementada · v0.2: F1 (dashboard) implementada; F2/F3 (puente, drivers, alertas) especificadas · impresión combinada (sección 17) especificada |
+| Estado | v0.1 implementada · v0.2: F1 (dashboard) implementada; F2/F3 (puente, drivers, alertas) especificadas · impresión combinada (sección 17) implementada |
 
 ---
 
@@ -691,6 +691,12 @@ Verificación hecha leyendo `addons/mrp` y `addons/stock` de la imagen oficial `
 | 30 | Entorno | El backend de Odoo 14 CE no declara `meta viewport`: en un teléfono la página se dibuja a 980 px, así que el dashboard se diseñó para escritorio y pantalla mural. En modo producción Odoo cachea el paquete de assets por proceso: tras cambiar archivos estáticos hay que reiniciar Odoo (o usar `?debug=assets`). | 21-Oct-2026 |
 | 31 | Dependencias | Apache ECharts 5.5.1 (Apache-2.0) en `static/lib/echarts/` con `LICENSE` y `NOTICE`, tomado del tarball de npm con integridad sha512 verificada contra el registro. | 21-Oct-2026 |
 | 32 | 16.13 A-30 | Verificado: base con 14.0.1.0.0 (rama `main`) actualizada a 14.0.2.0.0 con `-u imago_3dp` → 78/78 pruebas OK. La versión 14.0.2.0.0 se fijó desde F1. | 21-Oct-2026 |
+| 33 | 17.7 **[VERIFICAR]** V-08 MO sin WO | **Se cumple.** La MO de una solicitud no líder (solo movimientos `raw` contabilizados, sin WO) se cierra con `button_mark_done()` en Odoo 14; no hizo falta el fallback de WO de 0 min. Prueba `test_v08_non_lead_request_production_can_be_closed`. | 21-Oct-2026 |
+| 34 | 17.7 **[VERIFICAR]** V-09 / V-10 | **Se cumplen.** Entregar la líder o la no líder primero no afecta a la otra (cada MO tiene sus consumos). El reparto redondea con la precisión de la UdM del filamento y el último intento con parte absorbe la diferencia: 100 g en tres partes iguales suman 100 g exactos. | 21-Oct-2026 |
+| 35 | 17 Implementación | `imago.print.batch` (`models/print_batch.py`) con `_start_combined` / `_finish_combined` (privados, sin banderas de contexto). `request._start_job` se separó en `_create_machine_workorder`, `_create_job` y `_after_job_started` para reutilizarlos; el intento individual de v0.1 no cambia. `job._finish` rechaza los intentos de una combinada salvo con el parámetro privado `from_batch` (no llamable por RPC). El asistente de inicio agrega `extra_request_ids` ("Imprimir junto con") y un resumen de texto del reparto en lugar de una tabla. Los carretes permitidos son la intersección de los de todas las solicitudes. | 21-Oct-2026 |
+| 36 | 17 Asistente de terminar | `imago.print.batch.finish.wizard` con carretes (total de la placa) y una línea por solicitud (resultado, piezas, causa, parte %). Los porcentajes se muestran con 2 decimales: si la suma está a ≤ 0.05 puntos de 100 % (p. ej. 3 × 33.33) se normaliza; si no, se rechaza. | 21-Oct-2026 |
+| 37 | 17 Indicadores | `counts_for_printer` filtra los indicadores de impresora: acción "Tasa de fallos" (dominio), KPI de fallos 7 d, causas de falla, resultados por impresora y sellos de la estación en el dashboard. El aviso de filamento insuficiente compara los gramos estimados de toda la placa. El Solicitante puede leer todas las combinadas (igual que las solicitudes). | 21-Oct-2026 |
+| 38 | 17.8 A-43 | Verificado: base 14.0.2.0.0 con 7 intentos actualizada a 14.0.2.1.0 → todos con `share = 1`, `counts_for_printer = True` y `allocated_minutes = duration_minutes`; 97/97 pruebas OK. Flujo completo probado en el navegador (iniciar desde la cola del dashboard, tarjeta de estación, terminar: 60 g + 80 g en la MO de cada solicitud). | 21-Oct-2026 |
 
 ---
 
@@ -1093,7 +1099,7 @@ Pruebas del puente en `bridge/tests/` (`pytest`):
 
 ## 17. Impresión combinada (REQ-3DP-113)
 
-Versión objetivo `14.0.2.1.0`. No depende de F2 ni de F3 de la sección 16 y puede desarrollarse antes. Todo lo de v0.1 y v0.2 sigue vigente; los "Puntos clave del diseño" de `CLAUDE.md` no cambian. Especificado el 21-Oct-2026, sin código todavía.
+Versión objetivo `14.0.2.1.0`. No depende de F2 ni de F3 de la sección 16. Todo lo de v0.1 y v0.2 sigue vigente; los "Puntos clave del diseño" de `CLAUDE.md` no cambian. Especificado e **implementado** el 21-Oct-2026 (decisiones 33–38 de la sección 14).
 
 ### 17.1 Necesidad
 

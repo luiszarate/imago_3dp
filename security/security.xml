@@ -52,6 +52,13 @@
         <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
     </record>
 
+    <record id="rule_print_batch_company" model="ir.rule">
+        <field name="name">Impresión combinada 3D: multi-compañía</field>
+        <field name="model_id" ref="model_imago_print_batch"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
     <!-- Solicitante: lee todas (sin regla de lectura), escribe solo las propias en borrador/aclarar -->
     <record id="rule_print_request_requester_own" model="ir.rule">
         <field name="name">Solicitud de impresión 3D: el solicitante edita las propias</field>

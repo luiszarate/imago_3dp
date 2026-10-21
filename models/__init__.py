@@ -12,6 +12,7 @@ from . import mrp_workorder
 from . import stock_picking
 from . import print_request
 from . import print_job
+from . import print_batch
 from . import print_consumption
 from . import print_dashboard
 from . import print_dashboard_charts
