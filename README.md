@@ -2,7 +2,7 @@
 
 Módulo de Odoo 14 Community para Imago Aerospace. Gestiona las **solicitudes de impresión 3D** de ingeniería, las **4 impresoras** (como centros de trabajo de MRP) y el **inventario de filamento por carrete** (un lote = un carrete), con consumo real en gramos, incluidos los intentos fallidos.
 
-- Versión: `14.0.1.0.0` · Licencia LGPL-3 · Depende de `mrp`, `stock`, `mail` (sin Enterprise, sin `purchase`).
+- Versión: `14.0.2.0.0` · Licencia LGPL-3 · Depende de `mrp`, `stock`, `mail` (sin Enterprise, sin `purchase`).
 - Especificación y decisiones técnicas: [`SPEC.md`](SPEC.md) (la sección 14 registra cada punto [VERIFICAR]).
 
 ## Qué hace
@@ -22,8 +22,17 @@ Flujo de estados: `Borrador → Enviada → (Aclarar) → En cola → Imprimiend
 - Recepción de filamento: botón **[Generar carretes]** crea un lote por carrete (`ABS-NEG-0007`) hacia la ubicación 3D. **[Pesar carrete]** ajusta el inventario con báscula y tara; **[Marcar como agotado]** lo deja en 0 y lo desmonta.
 - Aviso automático (chatter + actividad al operador) cuando un carrete queda en o bajo el umbral (150 g por defecto).
 
+### Dashboard del operador (v0.2, fase F1)
+Primer elemento del menú para Operador y Responsable; se puede fijar como *Acción inicial* del usuario.
+- **Línea de resumen:** imprimiendo n/N, en cola, por revisar, en post-proceso, atrasadas y fallos de 7 días.
+- **Pendientes:** franja de tarjetas ordenada por severidad, cada una con su botón (Iniciar, Terminar intento, Montar carrete, Abrir). Cubre atrasadas, por revisar, post-proceso, intentos que superaron su estimado, filamento insuficiente, carretes casi vacíos e impresoras libres con trabajo en cola.
+- **Estaciones:** una tarjeta por impresora con su estado, la solicitud en curso, el avance **estimado por tiempo** con la hora de fin, el carrete montado y los sellos de sus últimos 3 intentos.
+- **Cola de trabajos** (por revisar, en cola, post-proceso), **Carretes** (resumen por filamento + montados y casi vacíos) y **Tendencias** (ECharts, en pestañas): ocupación 7 d, resultados 30 d, causas de falla y consumo por propósito en 8 semanas.
+- **Modo pantalla** para la pantalla mural: oculta el menú de Odoo y los botones, agranda el texto y destaca la siguiente acción.
+- Se actualiza cada 15 s (las gráficas, cada minuto) y se pausa con la pestaña oculta. La lectura en vivo de las impresoras llega en la fase F2.
+
 ### Menú *Impresión 3D*
-Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (kanban con estado, ETA y carrete montado) · Carretes · Reportes (Intentos, Tasa de fallos, Consumo de filamento, Ocupación de impresoras) · Configuración (Filamentos, Materiales, Propósitos, Ajustes).
+Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (kanban con estado, ETA y carrete montado) · Carretes · Reportes (Intentos, Tasa de fallos, Consumo de filamento, Ocupación de impresoras) · Configuración (Filamentos, Materiales, Propósitos, Ajustes).
 
 ## Instalación
 1. Copiar la carpeta `imago_3dp` al `addons_path` de Odoo 14.
@@ -41,7 +50,7 @@ Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (kanban con es
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-66 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad).
+80 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad) y A-19/A-30 del dashboard (`test_dashboard.py`).
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test
@@ -60,26 +69,30 @@ docker run --rm --platform linux/amd64 --network imago3dp-net -e HOST=imago3dp-d
 - Los cambios de estado solo ocurren dentro de los métodos `action_*` (escritura `sudo` tras validar estado, grupo y dueño); `write` rechaza cambios de estado directos aunque el cliente envíe contexto. Consumos ya contabilizados no se editan ni se borran (corregir con [Pesar carrete]).
 - La unidad de stock de un filamento debe ser el **gramo** (la de compra, cualquier unidad de peso).
 - Los ajustes de carrete usan `stock.inventory` y se validan como superusuario (Odoo exige el grupo Gerente de inventario) tras verificar el grupo Operador 3D.
+- Tras cambiar archivos estáticos (JS/SCSS/XML de `static/`), reinicia Odoo o abre con `?debug=assets`: en modo normal Odoo cachea el paquete de assets por proceso.
 - Fuera de alcance v0.1: alias de correo, lectura de G-code/3MF, costeo por proyecto, Gantt, mantenimiento, APIs de impresoras (ver `SPEC.md` §13).
 
-## Próxima versión: v0.2 (especificada, sin desarrollar)
-`SPEC.md` §16 define la versión `14.0.2.0.0`:
+## v0.2 en curso
+F1 (dashboard con datos de Odoo) está implementada. Faltan F2 (puente + drivers) y F3 (alertas). `SPEC.md` §16 define la versión `14.0.2.0.0`:
 - **Dashboard del operador** como página inicial: una acción cliente de Odoo con gráficas Apache ECharts.
 - **Puente local** (`bridge/`, Python en Docker): lee las impresoras por IP en la red de la planta y envía el estado a Odoo por JSON-RPC con API key.
 - **Drivers de solo lectura** para la Creality CR-M4 (HTTP puerto 81) y la Flashforge Adventurer 4 (TCP 8899 y cámara MJPEG en el 8080).
 - **Cruce impresora ↔ Odoo** con alertas: impresión no registrada, impresión terminada con intento abierto, error, sin comunicación.
 
-Los hallazgos del reconocimiento de red y los riesgos de seguridad están en §16.2.
+Los hallazgos del reconocimiento de red y los riesgos de seguridad están en §16.2. El sistema visual del dashboard (tokens, tipografía, modo pantalla) está en [`DESIGN.md`](DESIGN.md); el contexto de producto, en [`PRODUCT.md`](PRODUCT.md).
 
 ## Estructura
 ```
 models/    filament_material, print_purpose, print_request, print_job, print_consumption,
            product_template, stock_production_lot, stock_move, stock_picking,
-           mrp_workcenter, mrp_production, mrp_workorder, res_company, res_config_settings
+           mrp_workcenter, mrp_production, mrp_workorder, res_company, res_config_settings,
+           print_dashboard (+ print_dashboard_charts)
 wizards/   request_message, job_start, job_finish, workorder_filament,
            spool_receive, spool_weigh, spool_mount (+ vistas)
-views/     solicitudes, intentos, consumo, filamento/carretes, impresoras, WO, recepción, ajustes, menús
+views/     solicitudes, intentos, consumo, filamento/carretes, impresoras, WO, recepción, ajustes,
+           dashboard (acción cliente), assets, menús
+static/    src/js (dashboard + gráficas), src/xml (plantillas QWeb), src/scss, lib/echarts (5.5.1, Apache-2.0)
 security/  grupos, reglas de registro, ACL
 data/      secuencias, materiales, propósitos, producto genérico, tipos de actividad
-tests/     common, test_request_flow, test_consumption, test_spools, test_security
+tests/     common, test_request_flow, test_consumption, test_spools, test_security, test_dashboard
 ```

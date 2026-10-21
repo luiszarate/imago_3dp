@@ -1,0 +1,700 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T17:27:09+00:00",
+  "title": "Design System: imago_3dp · Dashboard de impresión 3D",
+  "extensions": {
+    "colorMeta": {
+      "o-brand-primary": {
+        "role": "primary",
+        "displayName": "Índigo Odoo",
+        "canonical": "#7C7BAD",
+        "tonalRamp": [
+          "#0a0329",
+          "#221e48",
+          "#3e3b68",
+          "#5d5b8b",
+          "#7d7cae",
+          "#9f9fd3",
+          "#c3c3f9",
+          "#ecedfe"
+        ],
+        "source": "$o-brand-primary"
+      },
+      "p3d-page": {
+        "role": "neutral",
+        "displayName": "Gris de página",
+        "canonical": "#f8f9fa",
+        "tonalRamp": [
+          "#212529",
+          "#343a40",
+          "#495057",
+          "#6c757d",
+          "#adb5bd",
+          "#ced4da",
+          "#dee2e6",
+          "#e9ecef"
+        ],
+        "source": "$gray-100"
+      },
+      "p3d-surface": {
+        "role": "neutral",
+        "displayName": "Superficie blanca",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "source": "$o-view-background-color"
+      },
+      "p3d-line": {
+        "role": "neutral",
+        "displayName": "Línea",
+        "canonical": "#dee2e6",
+        "tonalRamp": [
+          "#212529",
+          "#343a40",
+          "#495057",
+          "#6c757d",
+          "#adb5bd",
+          "#ced4da",
+          "#dee2e6",
+          "#e9ecef"
+        ],
+        "source": "$gray-300"
+      },
+      "p3d-ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#4c4c4c",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "source": "$o-main-text-color"
+      },
+      "p3d-ink-strong": {
+        "role": "neutral",
+        "displayName": "Tinta fuerte",
+        "canonical": "#212529",
+        "tonalRamp": [
+          "#212529",
+          "#343a40",
+          "#495057",
+          "#6c757d",
+          "#adb5bd",
+          "#ced4da",
+          "#dee2e6",
+          "#e9ecef"
+        ],
+        "source": "$gray-900"
+      },
+      "p3d-ink-muted": {
+        "role": "neutral",
+        "displayName": "Tinta tenue",
+        "canonical": "#6c757d",
+        "tonalRamp": [
+          "#212529",
+          "#343a40",
+          "#495057",
+          "#6c757d",
+          "#adb5bd",
+          "#ced4da",
+          "#dee2e6",
+          "#e9ecef"
+        ],
+        "source": "$gray-600"
+      },
+      "p3d-critical": {
+        "role": "status",
+        "displayName": "Crítico",
+        "canonical": "#c0392f",
+        "tonalRamp": [
+          "#1f0000",
+          "#4b0403",
+          "#7c120e",
+          "#ae261f",
+          "#d64e42",
+          "#ff7364",
+          "#fbb5ab",
+          "#fee9e6"
+        ]
+      },
+      "p3d-critical-bg": {
+        "role": "status",
+        "displayName": "Fondo crítico",
+        "canonical": "#fbeceb",
+        "tonalRamp": [
+          "#110808",
+          "#2d2221",
+          "#4a3f3e",
+          "#6a5e5d",
+          "#8c7f7e",
+          "#afa1a0",
+          "#d4c5c4",
+          "#f9eae9"
+        ]
+      },
+      "p3d-warning": {
+        "role": "status",
+        "displayName": "Aviso",
+        "canonical": "#8a5a00",
+        "tonalRamp": [
+          "#130900",
+          "#342104",
+          "#5b3a03",
+          "#825712",
+          "#a9772e",
+          "#ce9a53",
+          "#f4be77",
+          "#feebd3"
+        ]
+      },
+      "p3d-warning-bg": {
+        "role": "status",
+        "displayName": "Fondo de aviso",
+        "canonical": "#fdf3dc",
+        "tonalRamp": [
+          "#100a00",
+          "#2c2412",
+          "#49412e",
+          "#69604d",
+          "#8b826d",
+          "#aea48f",
+          "#d2c8b2",
+          "#f8eed7"
+        ]
+      },
+      "p3d-info": {
+        "role": "status",
+        "displayName": "Información",
+        "canonical": "#1f5f99",
+        "tonalRamp": [
+          "#010c1b",
+          "#002647",
+          "#064475",
+          "#25649f",
+          "#4886c3",
+          "#6baae9",
+          "#a0cefe",
+          "#e3f0fe"
+        ]
+      },
+      "p3d-info-bg": {
+        "role": "status",
+        "displayName": "Fondo de información",
+        "canonical": "#e8f1fb",
+        "tonalRamp": [
+          "#060c12",
+          "#1f262d",
+          "#3c434b",
+          "#5a626b",
+          "#7b838c",
+          "#9ea6af",
+          "#c1cad4",
+          "#e7f0fa"
+        ]
+      },
+      "p3d-ok": {
+        "role": "status",
+        "displayName": "Correcto",
+        "canonical": "#1d7a1d",
+        "tonalRamp": [
+          "#001001",
+          "#052e05",
+          "#045106",
+          "#167617",
+          "#41993e",
+          "#65bd61",
+          "#8ae285",
+          "#cbffc7"
+        ]
+      },
+      "p3d-ok-bg": {
+        "role": "status",
+        "displayName": "Fondo correcto",
+        "canonical": "#e9f5e9",
+        "tonalRamp": [
+          "#060d06",
+          "#1f281f",
+          "#3b453c",
+          "#5a645a",
+          "#7b867b",
+          "#9da99d",
+          "#c1cdc1",
+          "#e6f2e6"
+        ]
+      },
+      "p3d-idle": {
+        "role": "neutral",
+        "displayName": "Inactivo",
+        "canonical": "#495057",
+        "tonalRamp": [
+          "#212529",
+          "#343a40",
+          "#495057",
+          "#6c757d",
+          "#adb5bd",
+          "#ced4da",
+          "#dee2e6",
+          "#e9ecef"
+        ],
+        "source": "$gray-700"
+      },
+      "p3d-idle-bg": {
+        "role": "neutral",
+        "displayName": "Fondo inactivo",
+        "canonical": "#e9ecef",
+        "tonalRamp": [
+          "#212529",
+          "#343a40",
+          "#495057",
+          "#6c757d",
+          "#adb5bd",
+          "#ced4da",
+          "#dee2e6",
+          "#e9ecef"
+        ],
+        "source": "$gray-200"
+      },
+      "chart-series-1": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 1",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#000a20",
+          "#01244e",
+          "#09417f",
+          "#055fba",
+          "#3582e1",
+          "#63a7ff",
+          "#a8ccfc",
+          "#e5f0fe"
+        ]
+      },
+      "chart-series-2": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 2",
+        "canonical": "#eb6834",
+        "tonalRamp": [
+          "#1a0400",
+          "#421503",
+          "#722603",
+          "#a03d12",
+          "#d5531b",
+          "#fd7845",
+          "#feb59b",
+          "#fdeae3"
+        ]
+      },
+      "chart-series-3": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 3",
+        "canonical": "#1baf7a",
+        "tonalRamp": [
+          "#000f07",
+          "#032d1d",
+          "#104e36",
+          "#11734f",
+          "#19996b",
+          "#37c08a",
+          "#65e5ad",
+          "#c2ffdf"
+        ]
+      },
+      "chart-series-4": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 4",
+        "canonical": "#eda100",
+        "tonalRamp": [
+          "#120900",
+          "#332104",
+          "#593b04",
+          "#805815",
+          "#ab771e",
+          "#d9961d",
+          "#fbbc60",
+          "#fdecd4"
+        ]
+      },
+      "chart-series-5": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 5",
+        "canonical": "#e87ba4",
+        "tonalRamp": [
+          "#1d000b",
+          "#480325",
+          "#771042",
+          "#9c3762",
+          "#c35a83",
+          "#ea7da6",
+          "#fbb0c9",
+          "#fee8ee"
+        ]
+      },
+      "chart-series-6": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 6",
+        "canonical": "#008300",
+        "tonalRamp": [
+          "#001000",
+          "#022f02",
+          "#0e500b",
+          "#0d760a",
+          "#2e9c29",
+          "#57c051",
+          "#7de675",
+          "#cefec9"
+        ]
+      },
+      "chart-series-7": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 7",
+        "canonical": "#6250d6",
+        "tonalRamp": [
+          "#0a012c",
+          "#230966",
+          "#3e1ba4",
+          "#5945ca",
+          "#786af2",
+          "#9a97fb",
+          "#c2c3fa",
+          "#ecedff"
+        ]
+      },
+      "chart-series-8": {
+        "role": "data-viz",
+        "displayName": "Serie categórica 8",
+        "canonical": "#e34948",
+        "tonalRamp": [
+          "#1e0001",
+          "#4b0408",
+          "#7b1217",
+          "#b51221",
+          "#dd4443",
+          "#fe736d",
+          "#fab5ae",
+          "#fee9e7"
+        ]
+      },
+      "chart-status-ok": {
+        "role": "data-viz",
+        "displayName": "Resultado OK",
+        "canonical": "#0ca30c",
+        "tonalRamp": [
+          "#011001",
+          "#002f00",
+          "#085107",
+          "#1b7518",
+          "#269c23",
+          "#42c43d",
+          "#6bea64",
+          "#ccffc8"
+        ]
+      },
+      "chart-status-partial": {
+        "role": "data-viz",
+        "displayName": "Resultado parcial",
+        "canonical": "#fab219",
+        "tonalRamp": [
+          "#120900",
+          "#322103",
+          "#583c00",
+          "#7f590e",
+          "#a97816",
+          "#d7980c",
+          "#fdbc48",
+          "#feecd0"
+        ]
+      },
+      "chart-status-failed": {
+        "role": "data-viz",
+        "displayName": "Resultado fallido",
+        "canonical": "#d03b3b",
+        "tonalRamp": [
+          "#1e0101",
+          "#4a0509",
+          "#7f0411",
+          "#b31923",
+          "#dc4645",
+          "#fd756d",
+          "#feb3ac",
+          "#fee9e7"
+        ]
+      },
+      "chart-ink-secondary": {
+        "role": "data-viz",
+        "displayName": "Tinta de gráfica",
+        "canonical": "#5f5e5a",
+        "tonalRamp": [
+          "#0c0b08",
+          "#262522",
+          "#43423e",
+          "#62615d",
+          "#83827e",
+          "#a6a5a1",
+          "#cac9c4",
+          "#f0eeea"
+        ]
+      },
+      "chart-grid": {
+        "role": "data-viz",
+        "displayName": "Rejilla de gráfica",
+        "canonical": "#ebeae6",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262522",
+          "#43423f",
+          "#62615e",
+          "#83827f",
+          "#a6a5a1",
+          "#cac9c5",
+          "#efeeea"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "wall-poster": {
+        "displayName": "Cartel",
+        "purpose": "Solo el primer pendiente en Modo pantalla."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título de tarjeta de pendiente y palabra de estado en la banda (1.6rem en Modo pantalla)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Nombre de estación y números del resumen (1.6rem en Modo pantalla)."
+      },
+      "section-title": {
+        "displayName": "Section title",
+        "purpose": "Pendientes, Cola de trabajos, Carretes, Tendencias (1.15rem en Modo pantalla)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Cuerpo de 13 px de Odoo (1.0833rem sobre raíz de 12 px), cifras tabulares."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Estado de actualización, leyendas y datos secundarios."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Encabezados de grupo y de tabla."
+      },
+      "stamp": {
+        "displayName": "Sello",
+        "purpose": "Resultado de intento, en mayúsculas; la causa vuelve a minúsculas."
+      }
+    },
+    "shadows": [
+      {
+        "name": "chart-tooltip",
+        "value": "0 4px 12px rgba(0, 0, 0, 0.08)",
+        "purpose": "Solo el tooltip de ECharts; las superficies del dashboard son planas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "action-enter",
+        "value": "420ms cubic-bezier(0.16, 1, 0.3, 1); from opacity 0.35, translateY(6px)",
+        "purpose": "Única entrada: tarjeta de pendiente nueva. Desactivada con prefers-reduced-motion."
+      },
+      {
+        "name": "printing-cog",
+        "value": "rotate 360deg, 6s linear infinite",
+        "purpose": "Engrane de la banda Imprimiendo. Desactivado con prefers-reduced-motion."
+      },
+      {
+        "name": "chart-animation",
+        "value": "300ms cubicOut",
+        "purpose": "Animación de ECharts al dibujar una gráfica."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "576px",
+        "purpose": "Por debajo: una columna, franja a 240px-85%."
+      },
+      {
+        "name": "lg",
+        "value": "1200px",
+        "purpose": "Desde aquí: fila inferior de tres paneles y Modo pantalla en una sola pantalla. Por debajo: Tendencias a ancho completo y Modo pantalla desplazable."
+      }
+    ],
+    "wallMode": {
+      "rootFontSize": "clamp(14px, 1.05vw, 32px)",
+      "gridAreas": [
+        "summary summary summary",
+        "actions queue spools",
+        "stations stations stations"
+      ],
+      "gridColumns": "minmax(0, 6fr) minmax(0, 5fr) minmax(0, 4fr)",
+      "stationColumns": "repeat(auto-fit, minmax(20rem, 1fr))",
+      "limits": {
+        "actions": "1 cartel + 3",
+        "queue": 7,
+        "filaments": 5,
+        "criticalSpools": 4
+      },
+      "hidden": [
+        "botones",
+        "barra de navegación de Odoo",
+        "panel de control",
+        "Tendencias",
+        "nota de fuente"
+      ]
+    },
+    "platformConstraints": [
+      "Odoo 14 CE no incluye la meta viewport: los teléfonos maquetan a 980 px."
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón principal (Odoo)",
+      "kind": "button",
+      "refersTo": "o-brand-primary",
+      "description": "btn-primary btn-sm nativo de Odoo 14: la única acción principal de una tarjeta o estación.",
+      "html": "<button type=\"button\" class=\"ds-btn-primary\">Terminar intento</button>",
+      "css": ".ds-btn-primary{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; background:#7C7BAD;color:#fff;border:1px solid #7C7BAD;border-radius:3px;padding:2px 8px;font-size:12px;line-height:1.5;cursor:pointer;transition:background .15s} .ds-btn-primary:hover{background:#68679d;border-color:#62619a} .ds-btn-primary:focus-visible{outline:2px solid #7C7BAD;outline-offset:2px}"
+    },
+    {
+      "name": "Botón secundario (Odoo)",
+      "kind": "button",
+      "description": "btn-secondary btn-sm nativo de Odoo 14: Abrir, Iniciar, Montar carrete, Modo pantalla.",
+      "html": "<button type=\"button\" class=\"ds-btn-secondary\">Montar carrete</button>",
+      "css": ".ds-btn-secondary{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; background:#fff;color:#4c4c4c;border:1px solid #dee2e6;border-radius:3px;padding:2px 8px;font-size:12px;line-height:1.5;cursor:pointer} .ds-btn-secondary:hover{background:#f8f9fa;color:#212529} .ds-btn-secondary:focus-visible{outline:2px solid #7C7BAD;outline-offset:2px}"
+    },
+    {
+      "name": "Tarjeta de pendiente crítica",
+      "kind": "card",
+      "refersTo": "action-card-critical",
+      "description": "Pendiente de la franja de acciones con etiqueta de severidad, título, detalle y su único botón.",
+      "html": "<div class=\"ds-action ds-crit\"><span class=\"ds-sev\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 3.5h1.5v5h-1.5zm0 6h1.5V12h-1.5z\"/></svg> Urgente</span><a href=\"#\" class=\"ds-action-title\">Atrasada: PRT-2026-0008</a><span class=\"ds-action-detail\">Soporte cámara · requerida 19/10</span><span><button type=\"button\" class=\"ds-cta\">Iniciar</button></span></div>",
+      "css": ".ds-action{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; display:flex;flex-direction:column;gap:4px;width:280px;padding:12px 14px;border-radius:4px;color:#4c4c4c;font-size:13px} .ds-crit{background:#fbeceb;border:1px solid rgba(192,57,47,.35)} .ds-sev{align-self:flex-start;display:inline-flex;align-items:center;gap:3px;border-radius:999px;font-size:.78rem;font-weight:600;padding:1px 8px 1px 6px;background:rgba(255,255,255,.7);color:#c0392f} .ds-action-title{color:#212529;font-size:1.2rem;font-weight:600;line-height:1.25;text-decoration:none;text-underline-offset:2px} .ds-action-title:hover{color:#575690;text-decoration:underline} .ds-action-title:focus-visible{outline:2px solid #7C7BAD;outline-offset:2px} .ds-action-detail{color:#6c757d;font-size:.9em} .ds-cta{margin-top:6px;background:#7C7BAD;color:#fff;border:1px solid #7C7BAD;border-radius:3px;padding:2px 8px;font-size:12px;cursor:pointer} .ds-cta:focus-visible{outline:2px solid #7C7BAD;outline-offset:2px}"
+    },
+    {
+      "name": "Tarjeta de pendiente de aviso",
+      "kind": "card",
+      "refersTo": "action-card-warning",
+      "description": "Pendiente de severidad Atención: fondo y borde tintados en aviso.",
+      "html": "<div class=\"ds-action-w\"><span class=\"ds-sev-w\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 3.5h1.5v5h-1.5zm0 6h1.5V12h-1.5z\"/></svg> Atención</span><span class=\"ds-title-w\">3DP-03: carrete casi vacío</span><span class=\"ds-detail-w\">PETG-GRI-0004 · quedan 120 g</span></div>",
+      "css": ".ds-action-w{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; display:flex;flex-direction:column;gap:4px;width:280px;padding:12px 14px;border-radius:4px;background:#fdf3dc;border:1px solid rgba(138,90,0,.25);font-size:13px} .ds-sev-w{align-self:flex-start;display:inline-flex;align-items:center;gap:3px;border-radius:999px;font-size:.78rem;font-weight:600;padding:1px 8px 1px 6px;background:rgba(255,255,255,.7);color:#8a5a00} .ds-title-w{color:#212529;font-size:1.2rem;font-weight:600;line-height:1.25} .ds-detail-w{color:#6c757d;font-size:.9em}"
+    },
+    {
+      "name": "Estación imprimiendo",
+      "kind": "custom",
+      "refersTo": "station-band-printing",
+      "description": "Tarjeta de impresora: cabeza, banda de estado de borde a borde con hora de fin, medidor de avance estimado y sellos de intentos.",
+      "html": "<article class=\"ds-station\"><header class=\"ds-st-head\"><h3>3DP-01 CR-M4 #1</h3><span>Creality CR-M4</span></header><div class=\"ds-band\"><span class=\"ds-band-state\"><span class=\"ds-cog\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M8 5.2A2.8 2.8 0 108 10.8 2.8 2.8 0 008 5.2zM14 8.9V7.1l-1.7-.4a4.5 4.5 0 00-.5-1.2l.9-1.5-1.3-1.3-1.5.9a4.5 4.5 0 00-1.2-.5L8.9 1.4H7.1l-.4 1.7a4.5 4.5 0 00-1.2.5l-1.5-.9-1.3 1.3.9 1.5a4.5 4.5 0 00-.5 1.2L1.4 7.1v1.8l1.7.4c.1.4.3.8.5 1.2l-.9 1.5 1.3 1.3 1.5-.9c.4.2.8.4 1.2.5l.4 1.7h1.8l.4-1.7c.4-.1.8-.3 1.2-.5l1.5.9 1.3-1.3-.9-1.5c.2-.4.4-.8.5-1.2z\"/></svg></span> Imprimiendo</span><span>Fin ≈ <strong>12:45</strong></span></div><div class=\"ds-st-body\"><a href=\"#\"><strong>PRT-2026-0007</strong> · Costilla ala LH</a><div class=\"ds-meter-label\"><span><strong>52 %</strong> estimado por tiempo</span><span class=\"ds-muted\">94 de 180 min</span></div><div class=\"ds-track\"><div class=\"ds-fill\" style=\"width:52%\"></div></div></div><ul class=\"ds-stamps\"><li class=\"ds-stamp ds-failed\">Fallido<span> · Desprendimiento</span></li><li class=\"ds-stamp ds-ok\">OK</li></ul></article>",
+      "css": ".ds-station{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; width:300px;background:#fff;border:1px solid #dee2e6;border-radius:4px;overflow:hidden;color:#4c4c4c;font-size:13px;padding-bottom:14px} .ds-st-head{display:flex;flex-direction:column;padding:12px 16px 8px} .ds-st-head h3{margin:0;color:#212529;font-size:1.15rem;font-weight:600} .ds-st-head span,.ds-muted{color:#6c757d} .ds-band{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:#e8f1fb;color:#1f5f99} .ds-band-state{font-size:1.2rem;font-weight:600;display:inline-flex;align-items:center;gap:6px} .ds-cog{display:inline-flex;animation:ds-spin 6s linear infinite} @keyframes ds-spin{to{transform:rotate(360deg)}} @media (prefers-reduced-motion: reduce){.ds-cog{animation:none}} .ds-st-body{display:flex;flex-direction:column;gap:4px;padding:10px 16px 0} .ds-st-body a{color:#212529;text-decoration:none;text-underline-offset:2px} .ds-st-body a:hover{color:#575690;text-decoration:underline} .ds-st-body a:focus-visible{outline:2px solid #7C7BAD;outline-offset:2px} .ds-meter-label{display:flex;justify-content:space-between;gap:8px;margin:6px 0 4px} .ds-track{height:8px;border-radius:999px;background:#e9ecef;overflow:hidden} .ds-fill{height:100%;border-radius:999px;background:#1f5f99} .ds-stamps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:10px 16px 0;padding:0} .ds-stamp{border:1px solid currentColor;border-radius:3px;font-size:.76rem;font-weight:600;letter-spacing:.02em;padding:0 6px;text-transform:uppercase} .ds-stamp span{font-weight:500;letter-spacing:0;text-transform:none} .ds-ok{color:#1d7a1d} .ds-failed{color:#c0392f}"
+    },
+    {
+      "name": "Sellos de intento",
+      "kind": "chip",
+      "refersTo": "stamp-ok",
+      "description": "Resultado de cada intento terminado, sellado en su estación: OK, Parcial, Fallido · causa, Cancelado.",
+      "html": "<ul class=\"ds-stamp-row\"><li class=\"ds-s ds-s-ok\">OK</li><li class=\"ds-s ds-s-part\">Parcial<span> · Desfase de capas</span></li><li class=\"ds-s ds-s-fail\">Fallido<span> · Adhesión</span></li><li class=\"ds-s ds-s-canc\">Cancelado</li></ul>",
+      "css": ".ds-stamp-row{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0} .ds-s{border:1px solid currentColor;border-radius:3px;font-size:.76rem;font-weight:600;letter-spacing:.02em;padding:0 6px;text-transform:uppercase} .ds-s span{font-weight:500;letter-spacing:0;text-transform:none} .ds-s-ok{color:#1d7a1d} .ds-s-part{color:#8a5a00} .ds-s-fail{color:#c0392f} .ds-s-canc{color:#495057}"
+    },
+    {
+      "name": "Línea de resumen",
+      "kind": "nav",
+      "description": "Conteos en una línea con cifras tabulares; el conteo de atrasadas pasa a crítico con ícono.",
+      "html": "<header class=\"ds-summary\"><span class=\"ds-count\"><strong>1/3</strong> imprimiendo</span><span class=\"ds-count\"><strong>4</strong> en cola</span><span class=\"ds-count ds-count-crit\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 3.5h1.5v5h-1.5zm0 6h1.5V12h-1.5z\"/></svg> <strong>1</strong> atrasada</span><span class=\"ds-count\">Fallos 7 d: <strong>33.3 %</strong></span></header>",
+      "css": ".ds-summary{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; display:flex;flex-wrap:wrap;gap:4px 20px;align-items:center;padding-bottom:10px;border-bottom:1px solid #dee2e6;background:#f8f9fa;font-size:13px} .ds-count{color:#6c757d;white-space:nowrap;display:inline-flex;align-items:center;gap:4px} .ds-count strong{color:#212529;font-size:1.15rem;font-weight:600} .ds-count-crit,.ds-count-crit strong{color:#c0392f}"
+    },
+    {
+      "name": "Pestañas de Tendencias",
+      "kind": "nav",
+      "refersTo": "trend-tab-active",
+      "description": "nav-tabs de Odoo; la activa en tinta fuerte con subrayado índigo de 2 px.",
+      "html": "<ul class=\"ds-tabs\"><li><a href=\"#\" class=\"ds-tab ds-active\">Ocupación 7 d</a></li><li><a href=\"#\" class=\"ds-tab\">Resultados 30 d</a></li><li><a href=\"#\" class=\"ds-tab\">Causas de falla</a></li><li><a href=\"#\" class=\"ds-tab\">Consumo 8 sem</a></li></ul>",
+      "css": ".ds-tabs{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; display:flex;list-style:none;margin:0;padding:0;border-bottom:1px solid #dee2e6;font-size:13px} .ds-tab{display:block;padding:6px 10px;color:#6c757d;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px} .ds-tab:hover{color:#212529} .ds-tab:focus-visible{outline:2px solid #7C7BAD;outline-offset:2px} .ds-active{color:#212529;font-weight:500;border-bottom-color:#7C7BAD}"
+    },
+    {
+      "name": "Chip de aviso",
+      "kind": "chip",
+      "refersTo": "chip-warning",
+      "description": "Marca en línea junto a un filamento con carretes casi vacíos.",
+      "html": "<span class=\"ds-row\">PETG Gris 1.75 <span class=\"ds-chip\">1 casi vacío</span></span>",
+      "css": ".ds-row{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; color:#4c4c4c;font-size:13px} .ds-chip{display:inline-block;margin-left:4px;padding:0 7px;border-radius:999px;font-size:.76rem;font-weight:600;background:#fdf3dc;color:#8a5a00}"
+    },
+    {
+      "name": "Cartel del Modo pantalla",
+      "kind": "custom",
+      "refersTo": "wall-next-critical",
+      "description": "El primer pendiente a escala de cartel en Modo pantalla, sin botones.",
+      "html": "<div class=\"ds-wall-next\"><h2><span class=\"ds-wall-sev\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 3.5h1.5v5h-1.5zm0 6h1.5V12h-1.5z\"/></svg> Urgente</span>Atrasada: PRT-2026-0008</h2><span class=\"ds-wall-detail\">Soporte cámara · requerida 19/10</span></div>",
+      "css": ".ds-wall-next{font-family: Roboto, \"Helvetica Neue\", Arial, sans-serif; font-variant-numeric: tabular-nums; display:flex;flex-direction:column;gap:4px;padding:1rem 1.5rem;border-radius:4px;background:#fbeceb;border:1px solid rgba(192,57,47,.35)} .ds-wall-next h2{margin:0;color:#212529;font-size:2.3rem;font-weight:600;line-height:1.15;letter-spacing:-.01em;text-wrap:balance} .ds-wall-sev{font-size:.55em;font-weight:600;margin-right:.4em;vertical-align:.25em;color:#c0392f;display:inline-flex;align-items:center;gap:4px} .ds-wall-detail{color:#6c757d;font-size:1.4rem}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El tablero del cuarto de impresión",
+    "overview": "**Creative North Star: \"El tablero del cuarto de impresión\"**\n\nEl dashboard es una superficie nueva dentro de un mundo ya establecido: el backend de Odoo 14 CE (Roboto, `$o-brand-primary` #7C7BAD, Bootstrap 4, raíz de 12 px). Este documento registra el sistema propio del dashboard como extensión de ese mundo; no redefine Odoo. Botones, pestañas, barra de navegación y panel de control siguen siendo los de Odoo, y todo lo que el dashboard agrega se apoya en los neutrales de Bootstrap y en variables de Odoo.\n\nLa pantalla se ordena por lo que exige acción: una línea de resumen, la franja de pendientes ordenada por severidad, la fila de estaciones (una tarjeta por impresora con banda de estado) y, al pie, cola, carretes y tendencias. La densidad es la de un backend de trabajo: superficies blancas planas sobre el gris de página, bordes de 1 px, radio de 4 px y números tabulares. El color de estado es escaso y significa algo; el índigo de Odoo solo marca selección, foco y la acción principal.\n\nEl mismo sistema tiene dos lecturas. En la PC del operador se trabaja con clics. En el Modo pantalla se lee a distancia: la raíz crece, desaparecen los botones y el cromo de Odoo, y el primer pendiente se vuelve un cartel.",
+    "keyCharacteristics": [
+      "Extensión del look nativo de Odoo 14; nada de marca propia en esta superficie.",
+      "Superficies planas blancas, borde gris de 1 px, radio de 4 px.",
+      "Estado siempre como palabra + ícono Font Awesome + color, nunca solo color.",
+      "Colores de estado en tonos oscuros aptos para texto, cada uno con su fondo tintado.",
+      "Números tabulares en toda la superficie.",
+      "Un modo pantalla que escala por la raíz `rem`, sin botones y en una sola pantalla a partir de 1200 px."
+    ],
+    "rules": [
+      {
+        "name": "The Tinta Legible Rule",
+        "body": "Todo texto pasa 4.5:1 sobre su fondo. Por eso la tinta tenue es `$gray-600` y no `$o-main-color-muted` (#a8a8a8), que falla sobre blanco, y por eso los estados de texto son los tonos oscuros `p3d-*`, no los de la paleta de gráficas.",
+        "section": "colors"
+      },
+      {
+        "name": "The Estado con Palabra Rule",
+        "body": "Un estado siempre lleva su palabra y su ícono Font Awesome (Urgente `fa-exclamation-circle`, Atención `fa-exclamation-triangle`, Aviso `fa-info-circle`, Libre `fa-check`, Imprimiendo `fa-cog`, Fuera de servicio `fa-ban`). El color refuerza; nunca es la única señal.",
+        "section": "colors"
+      },
+      {
+        "name": "The Índigo No Es Estado Rule",
+        "body": "El índigo de Odoo marca selección, foco y la acción principal; ningún estado de impresora ni de severidad se pinta con él.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cifras Tabulares Rule",
+        "body": "`font-variant-numeric: tabular-nums` se fija en la raíz del dashboard; ningún bloque lo apaga.",
+        "section": "typography"
+      },
+      {
+        "name": "The Plano por Tono Rule",
+        "body": "Una superficie se separa por tono y por borde, no por sombra.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** construir sobre las variables de Odoo y Bootstrap (`$gray-*`, `$o-main-text-color`, `$o-brand-primary`) y sobre los componentes nativos de Odoo; el dashboard extiende Odoo 14, no lo reemplaza.",
+      "**Do** acompañar cada estado con su palabra y su ícono Font Awesome, además del color.",
+      "**Do** usar los tonos `p3d-critical`, `p3d-warning`, `p3d-info` y `p3d-ok` para texto y sus fondos `-bg` para tintar superficies.",
+      "**Do** asignar los colores de serie en el orden fijo de la paleta de gráficas y reservar `chart-status-*` para OK / Parcial / Fallido.",
+      "**Do** contar lo que el Modo pantalla oculta en una línea visible \"+N más\".",
+      "**Do** desactivar toda animación bajo `prefers-reduced-motion: reduce` (entrada de tarjetas y engrane).",
+      "**Do** quitar las clases del Modo pantalla de `html` y `body` al salir de la acción, para no alterar otras pantallas de Odoo."
+    ],
+    "donts": [
+      "**Don't** usar `$o-main-color-muted` (#a8a8a8) para texto: falla 4.5:1 sobre blanco.",
+      "**Don't** usar los colores de gráfica (`chart-status-partial` #fab219 y compañía) como color de texto.",
+      "**Don't** pintar un estado con el índigo de Odoo.",
+      "**Don't** poner sombras en superficies propias del dashboard; la única sombra es el tooltip de gráfica.",
+      "**Don't** mostrar botones ni el cromo de Odoo en Modo pantalla, salvo el conmutador para salir.",
+      "**Don't** agregar animaciones de entrada además de la de tarjetas nuevas."
+    ]
+  }
+}

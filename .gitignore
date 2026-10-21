@@ -3,3 +3,8 @@ __pycache__/
 .DS_Store
 # Configuración local de Claude Code (rutas de esta máquina)
 .claude/
+# Impeccable: capturas de revisión y estado de rondas (locales)
+.impeccable/review/
+.impeccable/questions/
+.impeccable/*-round*.json
+.impeccable/config.local.json

@@ -4,6 +4,9 @@
               web_icon="imago_3dp,static/description/icon.png"
               groups="imago_3dp.group_print_requester"/>
 
+    <menuitem id="menu_print3d_dashboard" name="Dashboard" parent="menu_print3d_root"
+              action="action_print_dashboard" sequence="5" groups="imago_3dp.group_print_operator"/>
+
     <menuitem id="menu_print3d_requests" name="Solicitudes" parent="menu_print3d_root" sequence="10"/>
     <menuitem id="menu_print3d_my_requests" name="Mis solicitudes" parent="menu_print3d_requests"
               action="action_print_request_my" sequence="10"/>

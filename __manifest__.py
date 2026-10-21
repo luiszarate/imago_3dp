@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Imago – Impresión 3D',
-    'version': '14.0.1.0.0',
+    'version': '14.0.2.0.0',
     'summary': 'Solicitudes de impresión 3D, impresoras y carretes de filamento',
     'author': 'Imago Aerospace',
     'license': 'LGPL-3',
@@ -30,7 +30,12 @@
         'views/mrp_workorder_views.xml',
         'views/stock_picking_views.xml',
         'views/res_config_settings_views.xml',
+        'views/print_dashboard_views.xml',
+        'views/assets.xml',
         'views/menus.xml',
+    ],
+    'qweb': [
+        'static/src/xml/print_dashboard.xml',
     ],
     'application': True,
     'installable': True,

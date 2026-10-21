@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_print_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard de impresión 3D</field>
+        <field name="tag">imago_3dp_dashboard</field>
+    </record>
+</odoo>

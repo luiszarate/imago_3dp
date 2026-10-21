@@ -1,0 +1,906 @@
+// Operator dashboard (SPEC 16.10). Odoo 14 native look: white surfaces on the
+// backend gray, Roboto, $o-brand-primary for selection and the main action,
+// status colors reserved and always paired with a word and an icon.
+$p3d-page: $gray-100;
+$p3d-surface: $o-view-background-color;
+$p3d-line: $gray-300;
+$p3d-ink: $o-main-text-color;
+$p3d-ink-strong: $gray-900;
+// Odoo's own muted gray (#a8a8a8) fails 4.5:1 on white; Bootstrap's gray-600 passes.
+$p3d-ink-muted: $gray-600;
+$p3d-radius: 4px;
+$p3d-gap: 16px;
+
+$p3d-critical: #c0392f;
+$p3d-critical-bg: #fbeceb;
+$p3d-warning: #8a5a00;
+$p3d-warning-bg: #fdf3dc;
+$p3d-info: #1f5f99;
+$p3d-info-bg: #e8f1fb;
+$p3d-ok: #1d7a1d;
+$p3d-ok-bg: #e9f5e9;
+$p3d-idle: $gray-700;
+$p3d-idle-bg: $gray-200;
+
+@mixin p3d-surface {
+    background: $p3d-surface;
+    border: 1px solid $p3d-line;
+    border-radius: $p3d-radius;
+}
+
+.o_action_manager .o_print3d_dashboard {
+    background: $p3d-page;
+    color: $p3d-ink;
+    font-variant-numeric: tabular-nums;
+    min-height: 100%;
+    overflow: auto;
+    padding: 12px $p3d-gap 24px;
+
+    ::selection {
+        background: rgba($o-brand-primary, 0.25);
+    }
+
+    a,
+    .btn,
+    .nav-link {
+        &:focus-visible {
+            outline: 2px solid $o-brand-primary;
+            outline-offset: 2px;
+        }
+    }
+
+    a {
+        color: $p3d-ink-strong;
+        text-underline-offset: 2px;
+
+        &:hover {
+            color: darken($o-brand-primary, 15%);
+        }
+    }
+
+    .o_p3d_muted {
+        color: $p3d-ink-muted;
+    }
+
+    .o_p3d_small {
+        font-size: 0.86em;
+    }
+
+    .o_p3d_text_critical {
+        color: $p3d-critical;
+        font-weight: 500;
+    }
+
+    .o_p3d_text_warning {
+        color: $p3d-warning;
+        font-weight: 500;
+    }
+
+    .o_p3d_section_title {
+        color: $p3d-ink-strong;
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 8px;
+
+        .o_p3d_actions_count {
+            color: $p3d-ink-muted;
+            font-weight: 400;
+        }
+    }
+
+    .o_p3d_group_title {
+        color: $p3d-ink-muted;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        margin: 14px 0 2px;
+    }
+
+    .o_p3d_panel {
+        @include p3d-surface;
+        padding: 14px 16px;
+    }
+
+    // ------------------------------------------------------------------
+    // Summary line
+    // ------------------------------------------------------------------
+    .o_p3d_summary {
+        align-items: center;
+        border-bottom: 1px solid $p3d-line;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+    }
+
+    .o_p3d_summary_counts {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        gap: 4px 20px;
+    }
+
+    .o_p3d_count {
+        color: $p3d-ink-muted;
+        white-space: nowrap;
+
+        strong {
+            color: $p3d-ink-strong;
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        &.o_p3d_count_critical,
+        &.o_p3d_count_critical strong {
+            color: $p3d-critical;
+        }
+    }
+
+    .o_p3d_summary_tools {
+        align-items: center;
+        display: flex;
+        gap: 6px;
+
+        .o_p3d_status {
+            color: $p3d-ink-muted;
+            font-size: 0.86em;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Action strip
+    // ------------------------------------------------------------------
+    .o_p3d_actions {
+        margin-bottom: 20px;
+    }
+
+    .o_p3d_wall_next_slot,
+    .o_p3d_wall_more {
+        display: none;
+    }
+
+    .o_p3d_all_clear {
+        @include p3d-surface;
+        color: $p3d-ok;
+        padding: 10px 14px;
+
+        .fa {
+            margin-right: 6px;
+        }
+    }
+
+    .o_p3d_action_list {
+        display: grid;
+        gap: 10px;
+        grid-auto-columns: minmax(260px, 300px);
+        grid-auto-flow: column;
+        list-style: none;
+        margin: 0;
+        overflow-x: auto;
+        padding: 2px 2px 8px;
+        scroll-snap-type: x proximity;
+        scrollbar-color: $p3d-line transparent;
+        scrollbar-width: thin;
+    }
+
+    .o_p3d_action {
+        @include p3d-surface;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 14px;
+        scroll-snap-align: start;
+
+        &.o_p3d_sev_critical {
+            background: $p3d-critical-bg;
+            border-color: rgba($p3d-critical, 0.35);
+        }
+
+        &.o_p3d_sev_warning {
+            background: $p3d-warning-bg;
+            border-color: rgba($p3d-warning, 0.25);
+        }
+
+        &.o_p3d_enter {
+            animation: o_p3d_enter 420ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    }
+
+    .o_p3d_sev_label {
+        align-self: flex-start;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 1px 8px 1px 6px;
+
+        .fa {
+            margin-right: 3px;
+        }
+    }
+
+    .o_p3d_sev_critical .o_p3d_sev_label {
+        background: rgba(white, 0.7);
+        color: $p3d-critical;
+    }
+
+    .o_p3d_sev_warning .o_p3d_sev_label {
+        background: rgba(white, 0.7);
+        color: $p3d-warning;
+    }
+
+    .o_p3d_sev_info .o_p3d_sev_label {
+        background: $p3d-info-bg;
+        color: $p3d-info;
+    }
+
+    .o_p3d_action_title {
+        color: $p3d-ink-strong;
+        font-size: 1.2rem;
+        font-weight: 600;
+        line-height: 1.25;
+    }
+
+    .o_p3d_action_detail {
+        color: $p3d-ink-muted;
+        flex: 1 1 auto;
+        font-size: 0.9em;
+    }
+
+    .o_p3d_action_cta {
+        margin-top: 6px;
+    }
+
+    // ------------------------------------------------------------------
+    // Stations
+    // ------------------------------------------------------------------
+    .o_p3d_stations {
+        display: grid;
+        gap: $p3d-gap;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        margin-bottom: 20px;
+    }
+
+    .o_p3d_station {
+        @include p3d-surface;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .o_p3d_station_head {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 16px 8px;
+    }
+
+    .o_p3d_station_name {
+        color: $p3d-ink-strong;
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .o_p3d_station_band {
+        align-items: center;
+        background: $p3d-ok-bg;
+        color: $p3d-ok;
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 16px;
+
+        .o_p3d_band_state {
+            font-size: 1.2rem;
+            font-weight: 600;
+
+            .fa {
+                margin-right: 6px;
+            }
+        }
+
+        .o_p3d_band_eta strong {
+            font-size: 1.1rem;
+        }
+    }
+
+    .o_p3d_station_printing .o_p3d_station_band {
+        background: $p3d-info-bg;
+        color: $p3d-info;
+
+        .fa-cog {
+            animation: o_p3d_spin 6s linear infinite;
+        }
+    }
+
+    .o_p3d_station_out_of_service .o_p3d_station_band {
+        background: $p3d-idle-bg;
+        color: $p3d-idle;
+    }
+
+    .o_p3d_station_body,
+    .o_p3d_station_spool {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 10px 16px 0;
+    }
+
+    .o_p3d_station_job {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_p3d_meter {
+        margin-top: 6px;
+    }
+
+    .o_p3d_meter_label {
+        align-items: baseline;
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .o_p3d_track {
+        background: $p3d-idle-bg;
+        border-radius: 999px;
+        height: 8px;
+        overflow: hidden;
+
+        &.o_p3d_track_thin {
+            height: 5px;
+        }
+    }
+
+    .o_p3d_track_fill {
+        background: $p3d-info;
+        border-radius: 999px;
+        height: 100%;
+
+        &.o_p3d_fill_new,
+        &.o_p3d_fill_open {
+            background: $p3d-ok;
+        }
+
+        &.o_p3d_fill_low {
+            background: $p3d-warning;
+        }
+
+        &.o_p3d_fill_empty {
+            background: $p3d-critical;
+        }
+    }
+
+    .o_p3d_stamps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        list-style: none;
+        margin: 10px 16px 0;
+        padding: 0;
+    }
+
+    .o_p3d_stamp {
+        border: 1px solid currentColor;
+        border-radius: 3px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 0 6px;
+        text-transform: uppercase;
+
+        .o_p3d_stamp_reason {
+            font-weight: 500;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        &.o_p3d_stamp_ok {
+            color: $p3d-ok;
+        }
+
+        &.o_p3d_stamp_partial {
+            color: $p3d-warning;
+        }
+
+        &.o_p3d_stamp_failed {
+            color: $p3d-critical;
+        }
+
+        &.o_p3d_stamp_cancelled {
+            color: $p3d-idle;
+        }
+    }
+
+    .o_p3d_station_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: auto;
+        padding: 14px 16px;
+    }
+
+    // ------------------------------------------------------------------
+    // Queue, spools, trends
+    // ------------------------------------------------------------------
+    .o_p3d_lower {
+        align-items: start;
+        display: grid;
+        gap: $p3d-gap;
+        grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 5fr);
+    }
+
+    .o_p3d_rows {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .o_p3d_row {
+        align-items: center;
+        border-top: 1px solid $p3d-line;
+        display: flex;
+        gap: 8px;
+        padding: 7px 0;
+
+        &:first-child {
+            border-top: none;
+        }
+    }
+
+    .o_p3d_row_main {
+        align-items: center;
+        display: flex;
+        flex: 1 1 auto;
+        gap: 10px;
+        min-width: 0;
+
+        &:hover {
+            text-decoration: none;
+
+            .o_p3d_row_title strong {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .o_p3d_row_text {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+
+        > span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .o_p3d_row_date {
+        white-space: nowrap;
+    }
+
+    .o_p3d_prio_1 {
+        color: $p3d-warning;
+    }
+
+    .o_p3d_prio_2 {
+        color: $p3d-critical;
+    }
+
+    .o_p3d_table {
+        width: 100%;
+
+        th {
+            border-bottom: 1px solid $p3d-line;
+            color: $p3d-ink-muted;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 0;
+        }
+
+        td {
+            border-bottom: 1px solid $p3d-line;
+            padding: 7px 0;
+            vertical-align: top;
+        }
+
+        .o_p3d_num {
+            padding-left: 12px;
+            text-align: right;
+            white-space: nowrap;
+        }
+    }
+
+    .o_p3d_chip {
+        border-radius: 999px;
+        display: inline-block;
+        font-size: 0.76rem;
+        font-weight: 600;
+        margin-left: 4px;
+        padding: 0 7px;
+
+        &.o_p3d_chip_warning {
+            background: $p3d-warning-bg;
+            color: $p3d-warning;
+        }
+    }
+
+    .o_p3d_trend_tabs {
+        border-bottom-color: $p3d-line;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-link {
+            color: $p3d-ink-muted;
+            padding: 6px 10px;
+            white-space: nowrap;
+
+            &.active {
+                border-bottom: 2px solid $o-brand-primary;
+                color: $p3d-ink-strong;
+                font-weight: 500;
+            }
+        }
+    }
+
+    .o_p3d_trend_caption {
+        color: $p3d-ink-muted;
+        font-size: 0.86em;
+        margin: 8px 0 4px;
+    }
+
+    .o_p3d_chart_box {
+        position: relative;
+    }
+
+    .o_p3d_chart {
+        height: 250px;
+        width: 100%;
+    }
+
+    .o_p3d_chart_empty_msg {
+        color: $p3d-ink-muted;
+        display: none;
+        left: 0;
+        margin: 0;
+        position: absolute;
+        right: 0;
+        text-align: center;
+        top: 45%;
+    }
+
+    .o_p3d_chart_empty {
+        .o_p3d_chart {
+            visibility: hidden;
+        }
+
+        .o_p3d_chart_empty_msg {
+            display: block;
+        }
+    }
+
+    .o_p3d_source {
+        color: $p3d-ink-muted;
+        font-size: 0.82em;
+        margin: 16px 0 0;
+    }
+
+    @include media-breakpoint-down(lg) {
+        .o_p3d_lower {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .o_p3d_trends {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @include media-breakpoint-down(sm) {
+        padding: 10px 12px 20px;
+
+        .o_p3d_lower {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .o_p3d_action_list {
+            grid-auto-columns: minmax(240px, 85%);
+        }
+
+        .o_p3d_summary_tools .o_p3d_status {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .o_p3d_action.o_p3d_enter,
+        .o_p3d_station_printing .o_p3d_station_band .fa-cog {
+            animation: none;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Wall mode: read from across the room, no Odoo chrome, no buttons
+    // ------------------------------------------------------------------
+    &.o_p3d_wall {
+        // One 16:9 screen, no scrolling: pending, queue and spools across the
+        // top; the stations get the full width below so their jobs stay legible.
+        display: grid;
+        gap: 0 24px;
+        grid-template-areas:
+            "summary summary summary"
+            "actions queue spools"
+            "stations stations stations";
+        grid-template-columns: minmax(0, 6fr) minmax(0, 5fr) minmax(0, 4fr);
+        grid-template-rows: auto auto 1fr;
+        height: 100vh;
+        overflow: auto;
+        padding: 1rem 1.5rem;
+
+        .o_p3d_btn,
+        .o_p3d_action_cta,
+        .o_p3d_station_actions,
+        .o_p3d_trends,
+        .o_p3d_source,
+        .o_p3d_summary_tools .o_p3d_status,
+        .o_p3d_muted.o_p3d_small,
+        .o_p3d_station_body > .o_p3d_muted {
+            display: none;
+        }
+
+        .o_p3d_summary {
+            grid-area: summary;
+        }
+
+        .o_p3d_actions {
+            grid-area: actions;
+            margin-bottom: 1rem;
+        }
+
+        .o_p3d_stations {
+            align-content: start;
+            grid-area: stations;
+            grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+            margin-bottom: 0;
+        }
+
+        .o_p3d_lower {
+            display: contents;
+        }
+
+        .o_p3d_queue {
+            align-self: start;
+            grid-area: queue;
+            margin-bottom: 1rem;
+        }
+
+        .o_p3d_spools {
+            align-self: start;
+            grid-area: spools;
+            margin-bottom: 1rem;
+        }
+
+        .o_p3d_wall_extra {
+            display: none;
+        }
+
+        .o_p3d_count strong {
+            font-size: 1.6rem;
+        }
+
+        .o_p3d_section_title {
+            font-size: 1.15rem;
+        }
+
+        .o_p3d_wall_next_slot,
+        .o_p3d_wall_more {
+            display: block;
+        }
+
+        .o_p3d_wall_next {
+            @include p3d-surface;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 0.5rem;
+            padding: 1rem 1.5rem;
+
+            &.o_p3d_sev_critical {
+                background: $p3d-critical-bg;
+                border-color: rgba($p3d-critical, 0.35);
+            }
+
+            &.o_p3d_sev_warning {
+                background: $p3d-warning-bg;
+            }
+
+            &.o_p3d_sev_info {
+                background: $p3d-info-bg;
+            }
+        }
+
+        .o_p3d_wall_next_title {
+            color: $p3d-ink-strong;
+            font-size: 2.3rem;
+            text-wrap: balance;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.15;
+            margin: 0;
+        }
+
+        .o_p3d_wall_sev {
+            font-size: 0.55em;
+            font-weight: 600;
+            margin-right: 0.4em;
+            vertical-align: 0.25em;
+        }
+
+        .o_p3d_sev_critical .o_p3d_wall_sev {
+            color: $p3d-critical;
+        }
+
+        .o_p3d_sev_warning .o_p3d_wall_sev {
+            color: $p3d-warning;
+        }
+
+        .o_p3d_sev_info .o_p3d_wall_sev {
+            color: $p3d-info;
+        }
+
+        .o_p3d_wall_next_detail {
+            color: $p3d-ink-muted;
+            font-size: 1.4rem;
+        }
+
+        .o_p3d_action_list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow: visible;
+        }
+
+        .o_p3d_action {
+            align-items: baseline;
+            background: transparent;
+            border-radius: 0;
+            border-width: 0 0 1px;
+            flex-direction: row;
+            gap: 1rem;
+            padding: 0.4rem 0.25rem;
+
+            // The first action is the poster above; the strip lists the next three.
+            &:first-child,
+            &:nth-child(n + 5) {
+                display: none;
+            }
+        }
+
+        .o_p3d_action_title {
+            font-size: 1.05rem;
+        }
+
+        .o_p3d_action_detail {
+            font-size: 0.95rem;
+        }
+
+        .o_p3d_wall_more {
+            color: $p3d-ink-muted;
+            margin: 0.4rem 0 0;
+        }
+
+        .o_p3d_station_band {
+            flex-wrap: wrap;
+            gap: 0 0.75rem;
+
+            .o_p3d_band_state {
+                font-size: 1.6rem;
+                white-space: nowrap;
+            }
+
+            .o_p3d_band_eta {
+                white-space: nowrap;
+
+                strong {
+                    font-size: 1.4rem;
+                }
+            }
+        }
+
+        .o_p3d_stamp {
+            font-size: 0.9rem;
+        }
+
+        .o_p3d_track {
+            height: 0.75rem;
+        }
+
+        // The one-screen grid targets wall displays; narrower windows scroll.
+        @include media-breakpoint-down(lg) {
+            display: block;
+            height: auto;
+
+            .o_p3d_stations {
+                grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+                margin-bottom: 1rem;
+            }
+
+            .o_p3d_lower {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            }
+
+            .o_p3d_queue,
+            .o_p3d_spools {
+                align-self: start;
+                grid-area: auto;
+                margin-bottom: 0;
+                overflow: visible;
+            }
+
+            // The scrolling fallback lists everything.
+            .o_p3d_wall_extra {
+                display: revert;
+            }
+
+            .o_p3d_queue .o_p3d_wall_more,
+            .o_p3d_spools .o_p3d_wall_more {
+                display: none;
+            }
+        }
+    }
+}
+
+// Odoo sizes everything in rem from a 12px root: raising the root scales the
+// whole dashboard for reading at a distance.
+html.o_p3d_wall_root {
+    font-size: clamp(14px, 1.05vw, 32px);
+}
+
+body.o_p3d_wall_mode {
+    .o_main_navbar,
+    .o_action_manager > .o_action > .o_control_panel {
+        display: none;
+    }
+
+    .o_p3d_wall_toggle {
+        bottom: 16px;
+        opacity: 0.6;
+        position: fixed;
+        right: 16px;
+        z-index: 10;
+
+        &:hover,
+        &:focus-visible {
+            opacity: 1;
+        }
+    }
+}
+
+@keyframes o_p3d_enter {
+    from {
+        opacity: 0.35;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes o_p3d_spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

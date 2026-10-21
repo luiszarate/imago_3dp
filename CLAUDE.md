@@ -18,9 +18,12 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 - v0.1 (14.0.1.0.0) **implementada**: modelos, asistentes, vistas, seguridad, datos y 66 pruebas.
 - Pruebas: 66/66 OK en Odoo 14 CE (base sin demo y base nueva con demo). Desinstalación limpia verificada.
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
-- v0.2 (14.0.2.0.0) **especificada** en `SPEC.md` §16, sin código todavía: dashboard del operador (acción cliente + ECharts), puente local `bridge/` y drivers de impresoras. Fases F1 → F3. Antes de F2 hay que resolver V-02/V-03 con una impresión real.
+- v0.2 (14.0.2.0.0) especificada en `SPEC.md` §16. **F1 implementada**: dashboard del operador (`imago.print.dashboard`, acción cliente `imago_3dp_dashboard`, ECharts 5.5.1 local). 80/80 pruebas OK y actualización desde 14.0.1.0.0 verificada (A-30). Pendientes: F2 (puente `bridge/` + drivers; antes resolver V-02/V-03 con una impresión real) y F3 (alertas).
+- Diseño: `PRODUCT.md`, `DESIGN.md` (+ `.impeccable/design.json`) y el brief/contrato de superficie en `.impeccable/surfaces/` (Impeccable). Estructura: franja de acciones sobre las estaciones, con Modo pantalla. Revisión final de diseño: *ship*. Cambios visuales al dashboard deben respetar los tokens y reglas de `DESIGN.md`.
 
 ## Reglas de diseño v0.2 (no romper al implementar)
+- Dashboard: los botones llaman por `/web/dataset/call_button` (con `_rpc` model/method la acción vuelve sin `views`). Plantillas QWeb clásicas: cálculos (`Math.*`) en el view model de JS, no en la plantilla. Modo pantalla debe limpiar las clases de `body`/`html` al salir de la acción.
+- Tras cambiar `static/`, reiniciar Odoo (o `?debug=assets`) para ver el cambio.
 - Odoo está en AWS: **el puente envía** el estado a Odoo (`execute_kw` con API key de un usuario técnico). Odoo nunca se conecta a la planta.
 - **Solo lectura:** lista blanca de comandos (Creality solo `function=get`; Flashforge solo `~M601 S1/~M602/~M115/~M119/~M105/~M27`). Ningún método de Odoo manda órdenes a una impresora.
 - **Lista blanca de campos:** el JSON de la Creality Box trae la contraseña WiFi (`wifipasswd`) y otros datos de red. Se descartan en el puente y Odoo rechaza las claves desconocidas.
@@ -45,4 +48,4 @@ docker run -d --name imago3dp-db --network imago3dp-net -e POSTGRES_USER=odoo -e
 # Pruebas del módulo
 docker run --rm --platform linux/amd64 --network imago3dp-net -e HOST=imago3dp-db -e USER=odoo -e PASSWORD=odoo -v "$PWD":/mnt/extra-addons/imago_3dp odoo:14 odoo -d test_imago_3dp --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test
 ```
-`.claude/launch.json` levanta un servidor de demostración local (`ui_demo`) en el puerto 8069.
+`.claude/launch.json` levanta la instancia local (`odoo14-local-instance`, `../../Local Instance`) en el puerto 8069. La base desechable `p3d_demo` tiene datos de demostración del dashboard (usuario `admin`).

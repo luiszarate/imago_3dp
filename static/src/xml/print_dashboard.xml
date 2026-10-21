@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="imago_3dp.Dashboard">
+        <div class="o_print3d_dashboard">
+            <header class="o_p3d_summary">
+                <div class="o_p3d_summary_counts" aria-live="polite"/>
+                <div class="o_p3d_summary_tools">
+                    <span class="o_p3d_status"/>
+                    <button type="button" class="btn btn-link btn-sm o_p3d_btn o_p3d_refresh" title="Actualizar ahora">
+                        <i class="fa fa-refresh" role="img" aria-label="Actualizar ahora"/>
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm o_p3d_wall_toggle">
+                        <i class="fa fa-television" role="img" aria-hidden="true"/>
+                        <span class="o_p3d_wall_toggle_label">Modo pantalla</span>
+                    </button>
+                </div>
+            </header>
+
+            <section class="o_p3d_actions" aria-labelledby="o_p3d_actions_title">
+                <h2 id="o_p3d_actions_title" class="o_p3d_section_title">Pendientes <span class="o_p3d_actions_count"/></h2>
+                <div class="o_p3d_wall_next_slot"/>
+                <div class="o_p3d_actions_body"/>
+            </section>
+
+            <section class="o_p3d_stations" aria-label="Impresoras"/>
+
+            <div class="o_p3d_lower">
+                <section class="o_p3d_panel o_p3d_queue" aria-labelledby="o_p3d_queue_title"/>
+                <section class="o_p3d_panel o_p3d_spools" aria-labelledby="o_p3d_spools_title"/>
+                <section class="o_p3d_panel o_p3d_trends" aria-labelledby="o_p3d_trends_title">
+                    <h2 id="o_p3d_trends_title" class="o_p3d_section_title">Tendencias</h2>
+                    <ul class="nav nav-tabs o_p3d_trend_tabs" role="tablist">
+                        <li class="nav-item"><a href="#" class="nav-link active" role="tab" data-trend="occupancy">Ocupación 7 d</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link" role="tab" data-trend="success">Resultados 30 d</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link" role="tab" data-trend="failure">Causas de falla</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link" role="tab" data-trend="grams">Consumo 8 sem</a></li>
+                    </ul>
+                    <p class="o_p3d_trend_caption"/>
+                    <div class="o_p3d_chart_box">
+                        <div class="o_p3d_chart" role="img"/>
+                        <p class="o_p3d_chart_empty_msg">Sin datos en el periodo</p>
+                    </div>
+                </section>
+            </div>
+
+            <p class="o_p3d_source">
+                Estado según los registros de Odoo; el avance es una estimación por tiempo.
+                La lectura en vivo de las impresoras llega con el puente local (fase F2).
+            </p>
+        </div>
+    </t>
+
+    <t t-name="imago_3dp.DashboardSummary">
+        <t t-set="kpis" t-value="view.kpis"/>
+        <span class="o_p3d_count"><strong><t t-esc="kpis.printing"/>/<t t-esc="kpis.printers"/></strong> imprimiendo</span>
+        <span class="o_p3d_count"><strong t-esc="kpis.queued"/> en cola</span>
+        <span class="o_p3d_count"><strong t-esc="kpis.submitted"/> por revisar</span>
+        <span class="o_p3d_count"><strong t-esc="kpis.post"/> en post-proceso</span>
+        <span t-attf-class="o_p3d_count #{kpis.late ? 'o_p3d_count_critical' : ''}">
+            <i t-if="kpis.late" class="fa fa-exclamation-circle" role="img" aria-hidden="true"/>
+            <strong t-esc="kpis.late"/> atrasada<t t-if="kpis.late != 1">s</t>
+        </span>
+        <span class="o_p3d_count">
+            Fallos 7 d:
+            <strong t-if="kpis.failure_rate_7d !== false"><t t-esc="kpis.failure_rate_7d"/> %</strong>
+            <strong t-else="">sin intentos</strong>
+        </span>
+    </t>
+
+    <t t-name="imago_3dp.DashboardActions">
+        <div t-if="!view.actions.length" class="o_p3d_all_clear">
+            <i class="fa fa-check-circle" role="img" aria-hidden="true"/>
+            Todo al día: no hay pendientes.
+        </div>
+        <ol t-else="" class="o_p3d_action_list">
+            <li t-foreach="view.actions" t-as="action"
+                t-attf-class="o_p3d_action o_p3d_sev_#{action.severity} #{action.is_new ? 'o_p3d_enter' : ''}">
+                <span class="o_p3d_sev_label">
+                    <i t-attf-class="fa #{action.icon}" role="img" aria-hidden="true"/>
+                    <t t-esc="action.severity_label"/>
+                </span>
+                <a t-if="action.open" href="#" class="o_p3d_open o_p3d_action_title"
+                   t-att-data-model="action.open.model" t-att-data-id="action.open.id" t-esc="action.title"/>
+                <span t-else="" class="o_p3d_action_title" t-esc="action.title"/>
+                <span class="o_p3d_action_detail" t-esc="action.detail"/>
+                <span class="o_p3d_action_cta">
+                    <button t-if="action.button" type="button" class="btn btn-primary btn-sm o_p3d_btn o_p3d_call"
+                            t-att-data-model="action.button.model" t-att-data-method="action.button.method"
+                            t-att-data-id="action.button.id" t-esc="action.button.label"/>
+                    <button t-elif="action.open" type="button" class="btn btn-secondary btn-sm o_p3d_btn o_p3d_open"
+                            t-att-data-model="action.open.model" t-att-data-id="action.open.id">Abrir</button>
+                </span>
+            </li>
+        </ol>
+        <p t-if="view.wall_hidden_actions" class="o_p3d_wall_more">
+            + <t t-esc="view.wall_hidden_actions"/> pendiente<t t-if="view.wall_hidden_actions != 1">s</t> más en la PC del operador
+        </p>
+    </t>
+
+    <t t-name="imago_3dp.DashboardStations">
+        <p t-if="!view.printers.length" class="o_p3d_panel o_p3d_muted">
+            No hay centros de trabajo marcados como impresora 3D. Márcalos en Manufactura → Centros de trabajo.
+        </p>
+        <article t-foreach="view.printers" t-as="printer" t-attf-class="o_p3d_station o_p3d_station_#{printer.status}">
+            <header class="o_p3d_station_head">
+                <h3 class="o_p3d_station_name" t-esc="printer.name"/>
+                <span class="o_p3d_muted" t-esc="printer.model"/>
+            </header>
+            <div class="o_p3d_station_band">
+                <span class="o_p3d_band_state">
+                    <i t-attf-class="fa #{printer.status_icon}" role="img" aria-hidden="true"/>
+                    <t t-esc="printer.status_label"/>
+                </span>
+                <span t-if="printer.eta_label" class="o_p3d_band_eta">Fin ≈ <strong t-esc="printer.eta_label"/></span>
+            </div>
+
+            <div class="o_p3d_station_body">
+                <t t-if="printer.request">
+                    <a href="#" class="o_p3d_open o_p3d_station_job" data-model="imago.print.request"
+                       t-att-data-id="printer.request.id">
+                        <strong t-esc="printer.request.name"/> · <t t-esc="printer.request.title"/>
+                    </a>
+                    <span class="o_p3d_muted" t-esc="printer.request.requester"/>
+                </t>
+                <t t-elif="printer.workorder">
+                    <a href="#" class="o_p3d_open o_p3d_station_job" data-model="mrp.workorder"
+                       t-att-data-id="printer.workorder.id" t-esc="printer.workorder.name"/>
+                    <span class="o_p3d_muted">Orden de producción</span>
+                </t>
+                <t t-elif="printer.next_in_queue">
+                    <span class="o_p3d_station_job">Siguiente: <strong t-esc="printer.next_in_queue.name"/> · <t t-esc="printer.next_in_queue.title"/></span>
+                    <span class="o_p3d_muted">En cola para esta impresora</span>
+                </t>
+                <span t-elif="printer.status === 'free'" class="o_p3d_muted">Sin trabajo asignado</span>
+
+                <div t-if="printer.job" class="o_p3d_meter">
+                    <div class="o_p3d_meter_label">
+                        <span><strong><t t-esc="printer.progress_label"/> %</strong> estimado por tiempo</span>
+                        <span t-attf-class="#{printer.job.overdue ? 'o_p3d_text_warning' : 'o_p3d_muted'}">
+                            <t t-esc="printer.job.elapsed_minutes"/> de <t t-esc="printer.job.est_minutes or '?'"/> min
+                        </span>
+                    </div>
+                    <div class="o_p3d_track" role="progressbar" t-att-aria-valuenow="printer.job.progress_est"
+                         aria-valuemin="0" aria-valuemax="100" aria-label="Avance estimado">
+                        <div class="o_p3d_track_fill" t-attf-style="width: #{printer.job.progress_est}%"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="o_p3d_station_spool">
+                <t t-if="printer.spool">
+                    <div class="o_p3d_meter_label">
+                        <a href="#" class="o_p3d_open" data-model="stock.production.lot" t-att-data-id="printer.spool.id">
+                            <t t-esc="printer.spool.name"/>
+                        </a>
+                        <span t-attf-class="#{printer.spool_warn ? 'o_p3d_text_warning' : ''}"><strong t-esc="printer.spool_g"/> g</span>
+                    </div>
+                    <div class="o_p3d_track o_p3d_track_thin" aria-hidden="true">
+                        <div t-attf-class="o_p3d_track_fill o_p3d_fill_#{printer.spool.state}"
+                             t-attf-style="width: #{printer.spool_pct}%"/>
+                    </div>
+                    <span class="o_p3d_muted o_p3d_small" t-esc="printer.spool.product"/>
+                    <span t-if="printer.filament_warning" class="o_p3d_text_critical o_p3d_small">
+                        <i class="fa fa-exclamation-circle" role="img" aria-hidden="true"/>
+                        El intento espera <t t-esc="printer.job_g"/> g
+                    </span>
+                </t>
+                <span t-else="" class="o_p3d_muted">Sin carrete montado</span>
+            </div>
+
+            <ul t-if="printer.recent_jobs.length" class="o_p3d_stamps" aria-label="Últimos intentos">
+                <li t-foreach="printer.recent_jobs" t-as="stamp" t-attf-class="o_p3d_stamp o_p3d_stamp_#{stamp.result}"
+                    t-att-title="stamp.name">
+                    <t t-esc="stamp.result_label"/><span t-if="stamp.reason_label" class="o_p3d_stamp_reason"> · <t t-esc="stamp.reason_label"/></span>
+                </li>
+            </ul>
+
+            <footer class="o_p3d_station_actions">
+                <button t-if="printer.request and printer.job" type="button" class="btn btn-primary btn-sm o_p3d_btn o_p3d_call"
+                        data-model="imago.print.request" data-method="action_open_finish_wizard"
+                        t-att-data-id="printer.request.id">Terminar intento</button>
+                <button type="button" class="btn btn-secondary btn-sm o_p3d_btn o_p3d_call"
+                        data-model="mrp.workcenter" data-method="action_open_mount_wizard"
+                        t-att-data-id="printer.id">Montar carrete</button>
+            </footer>
+        </article>
+    </t>
+
+    <t t-name="imago_3dp.DashboardQueue">
+        <h2 id="o_p3d_queue_title" class="o_p3d_section_title">Cola de trabajos</h2>
+        <p t-if="!view.queue.groups.length" class="o_p3d_muted">No hay solicitudes por revisar, en cola ni en post-proceso.</p>
+        <div t-foreach="view.queue.groups" t-as="group" t-attf-class="#{group.wall_extra ? 'o_p3d_wall_extra' : ''}">
+            <h3 class="o_p3d_group_title"><t t-esc="group.label"/> <span class="o_p3d_muted" t-esc="group.rows.length"/></h3>
+            <ul class="o_p3d_rows">
+                <li t-foreach="group.rows" t-as="row" t-attf-class="o_p3d_row #{row.wall_extra ? 'o_p3d_wall_extra' : ''}">
+                    <a href="#" class="o_p3d_open o_p3d_row_main" data-model="imago.print.request" t-att-data-id="row.id">
+                        <span class="o_p3d_row_text">
+                            <span class="o_p3d_row_title">
+                                <span t-if="row.priority" t-attf-class="o_p3d_prio o_p3d_prio_#{row.priority}"
+                                      role="img" t-att-aria-label="row.priority == 2 ? 'Urgente' : 'Alta'"
+                                      t-att-title="row.priority == 2 ? 'Urgente' : 'Alta'">
+                                    <i t-foreach="row.priority == 2 ? [1, 2] : [1]" t-as="star" class="fa fa-star" aria-hidden="true"/>
+                                </span>
+                                <strong t-esc="row.name"/> · <t t-esc="row.title"/>
+                            </span>
+                            <span class="o_p3d_muted o_p3d_small">
+                                <t t-esc="row.requester"/> · <t t-esc="row.qty_pieces"/> pza · <t t-esc="row.filament"/><t t-if="row.printer"> · <t t-esc="row.printer"/></t>
+                            </span>
+                        </span>
+                        <span t-attf-class="o_p3d_row_date #{row.is_late ? 'o_p3d_text_critical' : 'o_p3d_muted'}">
+                            <t t-if="row.is_late">Atrasada </t><t t-esc="row.date_label"/>
+                        </span>
+                    </a>
+                    <button t-if="row.state === 'queued'" type="button" class="btn btn-secondary btn-sm o_p3d_btn o_p3d_call"
+                            data-model="imago.print.request" data-method="action_open_start_wizard"
+                            t-att-data-id="row.id">Iniciar</button>
+                </li>
+            </ul>
+        </div>
+        <p t-if="view.queue.wall_more" class="o_p3d_wall_more">
+            + <t t-esc="view.queue.wall_more"/> más en la cola
+        </p>
+    </t>
+
+    <t t-name="imago_3dp.DashboardSpools">
+        <h2 id="o_p3d_spools_title" class="o_p3d_section_title">Carretes</h2>
+        <p t-if="!view.spools.summary.length" class="o_p3d_muted">No hay carretes con filamento. Genera carretes al recibir una compra.</p>
+        <table t-else="" class="o_p3d_table">
+            <thead>
+                <tr><th scope="col">Filamento</th><th scope="col" class="o_p3d_num">Carretes</th><th scope="col" class="o_p3d_num">Gramos</th></tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="view.spools.summary" t-as="row" t-attf-class="#{row.wall_extra ? 'o_p3d_wall_extra' : ''}">
+                    <td>
+                        <t t-esc="row.product"/>
+                        <span t-if="row.low" class="o_p3d_chip o_p3d_chip_warning"><t t-esc="row.low"/> casi vacío<t t-if="row.low != 1">s</t></span>
+                    </td>
+                    <td class="o_p3d_num" t-esc="row.spools"/>
+                    <td class="o_p3d_num" t-esc="row.grams_label"/>
+                </tr>
+            </tbody>
+        </table>
+        <t t-if="view.spools.critical.length">
+            <h3 class="o_p3d_group_title">Montados y casi vacíos</h3>
+            <ul class="o_p3d_rows">
+                <li t-foreach="view.spools.critical" t-as="lot" t-attf-class="o_p3d_row #{lot.wall_extra ? 'o_p3d_wall_extra' : ''}">
+                    <a href="#" class="o_p3d_open o_p3d_row_main" data-model="stock.production.lot" t-att-data-id="lot.id">
+                        <span class="o_p3d_row_text">
+                            <strong t-esc="lot.name"/>
+                            <span class="o_p3d_muted o_p3d_small">
+                                <t t-esc="lot.product"/><t t-if="lot.printer"> · en <t t-esc="lot.printer"/></t>
+                            </span>
+                        </span>
+                        <span t-attf-class="o_p3d_row_date #{lot.state === 'low' or lot.state === 'empty' ? 'o_p3d_text_warning' : ''}">
+                            <strong t-esc="lot.grams_label"/> g
+                        </span>
+                    </a>
+                </li>
+            </ul>
+        </t>
+        <p t-if="view.spools.wall_more" class="o_p3d_wall_more">
+            + <t t-esc="view.spools.wall_more"/> fila<t t-if="view.spools.wall_more != 1">s</t> más de carretes
+        </p>
+    </t>
+
+    <t t-name="imago_3dp.DashboardWallNext">
+        <div t-if="view.actions.length" t-attf-class="o_p3d_wall_next o_p3d_sev_#{view.actions[0].severity}">
+            <h2 class="o_p3d_wall_next_title">
+                <span class="o_p3d_wall_sev">
+                    <i t-attf-class="fa #{view.actions[0].icon}" role="img" aria-hidden="true"/>
+                    <t t-esc="view.actions[0].severity_label"/>
+                </span>
+                <t t-esc="view.actions[0].title"/>
+            </h2>
+            <span class="o_p3d_wall_next_detail" t-esc="view.actions[0].detail"/>
+        </div>
+    </t>
+
+</templates>

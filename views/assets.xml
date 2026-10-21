@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ECharts is not bundled here: the dashboard loads it lazily (jsLibs). -->
+    <template id="assets_backend" name="imago_3dp assets" inherit_id="web.assets_backend">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/imago_3dp/static/src/js/print_dashboard_charts.js"/>
+            <script type="text/javascript" src="/imago_3dp/static/src/js/print_dashboard.js"/>
+            <link rel="stylesheet" type="text/scss" href="/imago_3dp/static/src/scss/print_dashboard.scss"/>
+        </xpath>
+    </template>
+</odoo>
