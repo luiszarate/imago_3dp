@@ -1,14 +1,14 @@
-# imago_3dp — Especificación funcional y técnica v0.1
+# imago_3dp — Especificación funcional y técnica v0.1 / v0.2
 
 | Campo | Valor |
 |---|---|
 | Módulo | `imago_3dp` |
-| Versión objetivo | `14.0.1.0.0` |
+| Versión objetivo | `14.0.1.0.0` (v0.1) · `14.0.2.0.0` (v0.2, sección 16) |
 | Plataforma | Odoo 14 Community Edition (Python 3.6–3.8) |
 | Empresa | Imago Aerospace |
 | Documento relacionado | `IMAGO_Holom_Odoo14_MRP_Plan_v0.1.docx` (secciones 4.1, 4.2, 4.4, 6.1) y `IMAGO_Manual_Piloto_MRP_Holom_Odoo14.pdf` |
-| Fecha | 13-Oct-2026 |
-| Estado | Especificación para desarrollo (v0.1) |
+| Fecha | 13-Oct-2026 (v0.1) · 21-Oct-2026 (v0.2) |
+| Estado | v0.1 implementada · v0.2 (dashboard del operador, puente local y drivers de impresoras) especificada, pendiente de desarrollo |
 
 ---
 
@@ -646,7 +646,7 @@ No depender de `purchase`. La compra de filamento usa el flujo estándar ya inst
 | REQ-3DP-103 | Costeo por solicitud y proyecto (cuenta analítica, tarifa por hora de impresora). |
 | REQ-3DP-104 | Planeación automática con fechas en la cola (Gantt). |
 | REQ-3DP-105 | Mantenimiento preventivo de impresoras por horas de uso. |
-| REQ-3DP-106 | Integración con APIs de impresoras (OctoPrint, PrusaLink) para estado en vivo. |
+| REQ-3DP-106 | Integración con APIs de impresoras para estado en vivo. **→ Lectura de estado especificada en v0.2 (sección 16).** |
 | REQ-3DP-107 | Reglas de reabastecimiento sugeridas por consumo promedio. |
 
 ---
@@ -696,3 +696,387 @@ Verificación hecha leyendo `addons/mrp` y `addons/stock` de la imagen oficial `
   ```
 - **No** ejecutar sobre la base productiva. La validación funcional se hará después en `manuf_test` (`https://erp.imago.aero`), donde se generará el manual y la prueba piloto.
 - La instalación real de Imago contiene módulos propios (`purchase_order_approved`, `import.tracking`). El módulo no debe depender de ellos ni modificarlos.
+
+---
+
+## 16. v0.2 — Dashboard del operador, puente local y drivers de impresoras
+
+Versión objetivo `14.0.2.0.0`. Todo lo de v0.1 sigue vigente; en particular, **los "Puntos clave del diseño" de `CLAUDE.md` no cambian**. Las reglas de la sección 0 aplican igual a esta sección.
+
+### 16.1 Objetivo
+
+1. El operador abre Odoo y su **página inicial** es un dashboard gráfico con lo que necesita en el turno: el estado real de cada impresora, la cola, las alertas y los indicadores.
+2. El estado de las impresoras (avance, temperaturas, capas, tiempo restante, cámara) se lee **en la red local** de la planta, a partir de la IP que se configura en Odoo para cada impresora.
+3. Odoo **cruza** lo que reporta la impresora con lo registrado (intento abierto, WO `[MCH]` en progreso) y avisa cuando no coinciden.
+
+**No** forma parte de v0.2: mandar trabajos, pausar, detener ni cambiar parámetros de las impresoras (control remoto). Todo es **solo lectura** (ver D-15).
+
+### 16.2 Hallazgos del reconocimiento de red (21-Oct-2026)
+
+Se hicieron pruebas de solo lectura desde una Mac en la red de la planta (`192.168.0.0/24`): escaneo de puertos, peticiones HTTP GET y consultas G-code de estado. No se usó ninguna contraseña ni se envió ninguna orden de control.
+
+| | CR-M4 #1 | CR-M4 #2 | Adventurer 4 |
+|---|---|---|---|
+| IP (al 21-Oct-2026) | `192.168.0.248` | `192.168.0.249` | `192.168.0.61` |
+| Conectividad | Módulo WiFi Creality (Creality Box), `boxVersion` V3.04b06, modo WISP | ídem | Ethernet/WiFi propia |
+| Firmware | Marlin 2.0.9.1 (12-Ene-2023) | ídem | Flashforge v2.3.3 |
+| Puertos abiertos | 21 FTP (`220 Creality_FTP`), 23 telnet (`11NRouter login`), 80 (HTTP Basic auth, lighttpd 1.4.20), **81 (API de estado)**, 8888 (UPnP) | ídem | **8080 (cámara)**, **8899 (control/estado)** |
+| Lectura de estado | `GET http://IP:81/protocal.csp?fname=Info&opt=main&function=get` → JSON, **sin autenticación**, sin encabezados CORS | ídem | TCP 8899, comandos de texto `~M601 S1`, `~M115`, `~M119`, `~M105`, `~M27`, `~M602` |
+| Cámara | No (`video: 0`) | No | MJPEG `http://IP:8080/?action=stream` (MJPG-Streamer 0.2, 640×480, ~5 fps, `Access-Control-Allow-Origin: *`). `?action=snapshot` **no responde**. |
+| Observaciones | `tfCard: 1` | `tfCard: 0` (sin tarjeta SD) | `M601 S1` contesta `Control failed` (FlashPrint tiene el control), pero **las consultas de estado responden igual**. En reposo: `M105` → `T0:21/0 B:5/0` (la lectura de cama de 5 °C es dudosa, ver V-04). |
+
+**Campos útiles del JSON de la Creality Box:** `connect`, `state`, `pause`, `stop`, `err`, `error`, `printProgress`, `dProgress`, `nozzleTemp`, `bedTemp`, `layer`, `TotalLayer`, `printLeftTime`, `printJobTime`, `printStartTime`, `curPosition`, `tfCard`, `model`, `modelVersion`, `boxVersion`.
+
+**Respuestas de la Adventurer 4 (en reposo):**
+```
+M115 → Machine Type: Flashforge Adventurer 4 / Firmware: v2.3.3 / X: 220 Y: 200 Z: 250 / Tool Count: 1
+M119 → MachineStatus: READY / MoveMode: READY / Status: S:0 L:0 J:0 F:0 / LED: 0 / CurrentFile:
+M105 → T0:21/0 B:5/0
+M27  → SD printing byte 0/100 / Layer: 0/0
+```
+
+**Hallazgos de seguridad:**
+- El JSON de la Creality Box incluye **la contraseña del WiFi en texto plano** (`wifipasswd`), además de `ssid`, `apclissid`, `apclimac` y `ownerId`, para cualquier equipo de la red.
+- Según la integración comunitaria [pcartwright81/Creality-Wifi-Box-Control](https://github.com/pcartwright81/Creality-Wifi-Box-Control), la misma API acepta **pausar y detener** impresiones (`fname=net&opt=iot_conf&function=set&pause=1|stop=1`) sin autenticación. No se probó.
+- Recomendación para TI: poner las impresoras en una VLAN o SSID aislado al que solo tenga acceso el equipo del puente (y las PCs con Creality Print/FlashPrint), y fijar sus IPs con reservas DHCP.
+
+**Hosting de Odoo:** `erp.imago.aero` resuelve a `35.89.115.62` (AWS). El servidor **no ve** la red de la planta.
+
+**Consecuencias para el diseño:**
+- El navegador no puede leer las impresoras directamente. La Adventurer 4 usa TCP crudo; la Creality Box no envía CORS; y desde una página HTTPS el navegador bloquea las peticiones a `http://192.168.x.x` (contenido mixto).
+- Odoo tampoco puede consultarlas, porque está en AWS.
+- Por lo tanto se necesita un **puente local**: un programa en la red de la planta que lee las impresoras y **envía** el estado a Odoo. Odoo nunca inicia conexiones hacia la planta y no hay que abrir puertos de entrada.
+
+### 16.3 Decisiones de diseño v0.2
+
+| ID | Decisión |
+|---|---|
+| D-09 | **Dashboard = acción cliente de Odoo** (`ir.actions.client`, tag `imago_3dp_dashboard`) dentro del módulo, no una aplicación aparte. Se asigna como *Acción inicial* (`res.users.action_id`) de los operadores. |
+| D-10 | Gráficas con **Apache ECharts 5.5.1** (licencia Apache-2.0), copiado en `static/lib/echarts/` con su `LICENSE`, **sin** paso de compilación npm. Se carga de forma diferida solo en el dashboard (`jsLibs` de la acción), no en todo el backend. |
+| D-11 | **Puente local** (`bridge/`, Python 3.11, servicio independiente de Odoo) que corre en un equipo siempre encendido de la red de la planta (mini-PC, PC del cuarto de impresión o Raspberry; recomendado como contenedor Docker). **No** va conectado a las impresoras: llega a ellas por IP. |
+| D-12 | El puente **envía** (push) el estado a Odoo por HTTPS usando el **JSON-RPC estándar** de Odoo (`/jsonrpc`, `execute_kw`) con un **usuario técnico y su API key** de Odoo 14. No se crea un endpoint con autenticación propia: la base se indica de forma explícita, la llave es revocable y se reutiliza el control de acceso de Odoo. |
+| D-13 | La **configuración de cada impresora** (driver, IP, puerto, cámara) vive en Odoo, en `mrp.workcenter`. El puente la descarga de Odoo y no tiene una lista local de impresoras. |
+| D-14 | El estado en vivo se guarda en un **modelo propio** (`imago.printer.status`, una fila por impresora) y no en `mrp.workcenter`, para no escribir el centro de trabajo cada 10 s (bloqueos con los operadores, `write_date`, caché). Solo se guarda **el último estado** y, aparte, los **cambios de estado** como eventos (`imago.printer.event`); no se guarda cada muestra. |
+| D-15 | **Solo lectura.** Los drivers solo pueden emitir una lista blanca de lecturas: Creality, solo `function=get`; Flashforge, solo `~M601 S1`, `~M602`, `~M115`, `~M119`, `~M105`, `~M27`. Odoo no tiene ningún método que mande órdenes a una impresora. |
+| D-16 | **La telemetría nunca cambia datos de negocio:** no cambia el estado de solicitudes ni el resultado de intentos, y no mueve stock. Solo genera eventos, alertas y actividades. El operador sigue iniciando y terminando intentos con los asistentes de v0.1 (gramos reales por carrete). |
+| D-17 | **Lista blanca de campos:** el puente convierte cada respuesta a un esquema común (16.6) y **descarta todo lo demás**, en particular `wifipasswd`, `ssid`, `apclissid`, `apclimac`, `ownerId`, `DIDString`, `APILicense` e `InitString`. Odoo, además, rechaza las claves desconocidas. |
+| D-18 | **Cámara en v0.2 = fotos**, no video en vivo. El puente extrae un cuadro JPEG del flujo MJPEG y lo envía junto con el estado. El video en vivo queda en el backlog (REQ-3DP-108) porque exige servir HTTPS con certificado válido desde la red local. |
+| D-19 | Las IPs de impresora se aceptan solo como **IPv4 privada** literal (`ipaddress.ip_address(...).is_private`, sin loopback ni link-local), sin nombres DNS. El puente vuelve a validarlo antes de conectarse. |
+| D-20 | El puente vive en este mismo repositorio, en `bridge/`, para versionar juntos el contrato de datos (16.6) y los dos extremos. Odoo no lo importa (no está en `__init__.py`). |
+
+### 16.4 Arquitectura
+
+```
+ RED DE LA PLANTA (192.168.0.0/24)                         │  AWS
+                                                           │
+ ┌───────────────┐  HTTP GET :81 (JSON)                    │  ┌───────────────────────────────┐
+ │ CR-M4 #1 / #2 │◀───────────┐                            │  │ Odoo 14 (erp.imago.aero)      │
+ └───────────────┘            │   ┌───────────────────┐    │  │                               │
+                              ├───│ imago-3dp-bridge  │────┼─▶│ /jsonrpc execute_kw           │
+ ┌───────────────┐  TCP :8899 │   │ (Docker, Python)  │    │  │  imago.printer.bridge         │
+ │ Adventurer 4  │◀───────────┤   │ - drivers         │    │  │   .get_config()              │
+ └───────────────┘  MJPEG     │   │ - normaliza       │    │  │   .push_telemetry(payload)    │
+        :8080 ◀───────────────┘   │ - fotos           │    │  │        │                      │
+                                  └───────────────────┘    │  │        ▼                      │
+                                                           │  │ imago.printer.status / event  │
+ ┌──────────────────────┐   HTTPS (sesión del operador)    │  │        │                      │
+ │ Navegador operador   │◀─────────────────────────────────┼──│ Acción cliente "Dashboard"    │
+ │ (PC o pantalla mural)│   orm: get_dashboard_data()      │  │  (OWL/ECharts)                │
+ └──────────────────────┘                                  │  └───────────────────────────────┘
+```
+
+La flecha puente → Odoo es **HTTPS saliente** desde la planta; no hay conexiones de entrada.
+
+Ciclo normal:
+1. El puente pide su configuración a Odoo al arrancar, cada 5 min, o cuando cambia `config_version`.
+2. Lee cada impresora cada `poll_seconds`, por defecto 10 s.
+3. Envía un lote con todas las impresoras en una sola llamada.
+4. Odoo valida el lote, actualiza `imago.printer.status`, detecta los cambios de estado y crea eventos y alertas.
+5. El dashboard consulta a Odoo cada 10 s; las agregaciones pesadas se recalculan cada 60 s.
+
+### 16.5 Modelo de datos
+
+#### 16.5.1 Extensión de `mrp.workcenter` (configuración de conexión)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `printer_driver` | Selection | `none` (Sin conexión, default) / `creality_box` (Creality WiFi Box) / `flashforge_tcp` (Flashforge TCP 8899) |
+| `printer_host` | Char | IPv4 privada (D-19). Requerido si `printer_driver != 'none'`. |
+| `printer_port` | Integer | Onchange del driver: `creality_box` → 81, `flashforge_tcp` → 8899. Rango 1–65535. |
+| `camera_url` | Char | Opcional. Esquema `http`, y el host debe ser **igual** a `printer_host`. Onchange para `flashforge_tcp`: `http://<host>:8080/?action=stream`. |
+| `bridge_id` | M2o `imago.printer.bridge` | Puente que lee esta impresora. Requerido si hay driver. |
+| `live_status_id` | M2o `imago.printer.status` compute | Fila de estado de la impresora. |
+| `live_state` | Selection compute (no almacenado) | Estado en vivo **con frescura**: `no_link` si no hay driver; `stale` (*Sin datos*) si `received_at` tiene más de `print3d_telemetry_stale_s` segundos; si no, `status.state`. |
+
+Constraint: un mismo `printer_host` + `printer_port` no puede repetirse entre centros de trabajo activos.
+
+Edición: estos campos se editan en el formulario del centro de trabajo, en una pestaña "Conexión", por quien ya puede editar centros de trabajo (Manufactura/Administrador). Cualquier cambio incrementa `bridge_id.config_version`.
+
+#### 16.5.2 `imago.printer.bridge` (puente)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `name` | Char, req. | p. ej. "Puente cuarto de impresión" |
+| `user_id` | M2o res.users, req. | Usuario técnico con el grupo `group_print_bridge` (16.8). Único. |
+| `active` | Boolean | |
+| `poll_seconds` | Integer | default 10, mínimo 5 |
+| `snapshot_seconds` | Integer | default 30 mientras imprime; 300 en reposo |
+| `config_version` | Integer | Se incrementa cuando cambia la configuración de alguna impresora del puente. |
+| `last_seen` | Datetime | Último push recibido |
+| `bridge_version` | Char | Lo reporta el puente |
+| `workcenter_ids` | O2m `mrp.workcenter` (`bridge_id`) | |
+| `is_online` | Boolean compute | `last_seen` dentro de 3 × `poll_seconds` |
+
+Métodos (los llama el puente vía `execute_kw`):
+- `get_config()` (`@api.model`): identifica el puente por `env.user`. Si el usuario no es el `user_id` de un puente activo, lanza `AccessError`. Devuelve `{config_version, poll_seconds, snapshot_seconds, printers: [{workcenter_id, code, driver, host, port, camera_url}]}`.
+- `push_telemetry(payload)` (`@api.model`): valida el lote (16.6), actualiza los estados con `sudo()` acotado tras verificar puente y grupo, crea eventos y alertas (16.7) y devuelve `{ok, config_version, errors: [{workcenter_id, error}]}`. Una impresora con datos inválidos **no** invalida el resto del lote. Pushes del mismo puente con menos de 3 s de separación se ignoran (`ok: false, error: 'rate_limited'`).
+
+#### 16.5.3 `imago.printer.status` (último estado; una fila por impresora)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `workcenter_id` | M2o mrp.workcenter | req., **único**, `ondelete='cascade'` |
+| `bridge_id` | M2o | |
+| `reachable` | Boolean | el puente pudo conectarse |
+| `state` | Selection | `offline`, `idle`, `printing`, `paused`, `finished`, `error`, `unknown` |
+| `progress` | Float | 0–100 |
+| `nozzle_temp`, `nozzle_target`, `bed_temp`, `bed_target` | Float | °C; target vacío si el driver no lo da |
+| `layer`, `layer_total` | Integer | |
+| `time_left_min`, `job_time_min` | Integer | vacío si el driver no lo da |
+| `file_name` | Char | máx. 128 caracteres |
+| `error_text` | Char | máx. 256 caracteres |
+| `reported_at` | Datetime | marca de tiempo del puente (UTC) |
+| `received_at` | Datetime | marca de tiempo de Odoo al recibir |
+| `snapshot` | Binary (`attachment=True`) | último JPEG, máx. 512 KB |
+| `snapshot_at` | Datetime | |
+
+#### 16.5.4 `imago.printer.event` (cambios de estado)
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `workcenter_id` | M2o | req. |
+| `date` | Datetime | |
+| `event_type` | Selection | `started`, `paused`, `resumed`, `finished`, `error`, `offline`, `online`, `unregistered` (imprime sin WO en progreso), `finished_open` (terminó con intento abierto) |
+| `state_from`, `state_to` | Selection | |
+| `workorder_id` | M2o mrp.workorder | WO en progreso en ese momento, si existe |
+| `job_id` | M2o imago.print.job | intento `running` en ese momento, si existe |
+| `details` | Char | |
+
+Los eventos son inmutables (`write`/`unlink` bloqueados salvo `env.su`). Sirven para el historial de la impresora, las alertas y los indicadores de disponibilidad.
+
+#### 16.5.5 Ajustes (en `res.company` / `res.config.settings`)
+
+| Campo | Default | Uso |
+|---|---|---|
+| `print3d_telemetry_stale_s` | 60 | A partir de cuántos segundos sin datos se muestra *Sin datos* |
+| `print3d_offline_alert_min` | 10 | Minutos sin comunicación, con WO en progreso, antes de alertar |
+| `print3d_finished_alert_min` | 5 | Minutos en `finished`/`idle` con intento abierto antes de crear la actividad "Cerrar intento" |
+
+### 16.6 Contrato de datos puente → Odoo (`push_telemetry`)
+
+```json
+{
+  "bridge_version": "0.2.0",
+  "sent_at": "2026-10-21T16:00:00Z",
+  "printers": [
+    {
+      "workcenter_id": 12,
+      "reachable": true,
+      "state": "printing",
+      "progress": 42.0,
+      "nozzle_temp": 210.0, "nozzle_target": 210.0,
+      "bed_temp": 60.0, "bed_target": 60.0,
+      "layer": 120, "layer_total": 300,
+      "time_left_min": 95, "job_time_min": 60,
+      "file_name": "soporte_ala.gx",
+      "error_text": null,
+      "snapshot_jpeg_b64": null
+    }
+  ]
+}
+```
+
+Validación en Odoo:
+- `workcenter_id` debe pertenecer al puente que llama.
+- `state` debe estar en la lista de 16.5.3.
+- `progress` en 0–100; temperaturas en −20…400 °C; enteros ≥ 0.
+- Las cadenas se recortan a su tamaño máximo y se guardan como texto (se escapan al mostrarlas).
+- `snapshot_jpeg_b64`: máx. 512 KB decodificado y con firma JPEG (`FF D8`) al inicio; si no la tiene, se descarta solo la foto.
+- **Cualquier clave fuera de este esquema se rechaza** (D-17).
+- `sent_at` no puede estar más de 5 min en el futuro.
+
+### 16.7 Cruce impresora ↔ Odoo y alertas
+
+Se evalúa en `push_telemetry` cuando cambia `state`, y periódicamente para las condiciones que dependen del tiempo (cron cada 5 min, `ir.cron`). Cada alerta se crea **una sola vez** por (impresora, tipo, WO o impresión) y se cierra sola cuando la condición desaparece.
+
+| Impresora reporta | Odoo tiene | Resultado |
+|---|---|---|
+| `printing` | WO `[MCH]` en progreso | OK |
+| `printing` | **ninguna** WO en progreso | Evento `unregistered` + aviso en el dashboard "Impresión no registrada en Odoo" + actividad al operador por defecto |
+| `finished`/`idle` por más de `print3d_finished_alert_min` | intento `running` | Evento `finished_open` + actividad al operador del intento: "Terminó la impresión en 3DP-0X: cerrar intento PRT-…/n" |
+| `error` | cualquier cosa | Evento `error` + actividad al operador + tarjeta en rojo |
+| sin datos por más de `print3d_offline_alert_min` | WO en progreso | Evento `offline` + aviso "Sin comunicación con 3DP-0X" |
+| cualquiera | impresora `out_of_service` | Solo se muestra; no se generan alertas |
+
+### 16.8 Seguridad
+
+- Nuevo grupo `group_print_bridge` ("Puente de impresoras (técnico)"), sin menús. Solo puede llamar a `get_config` y `push_telemetry`; no tiene ACL de escritura directa sobre ningún modelo (las escrituras se hacen con `sudo()` acotado dentro de esos métodos, igual que en la decisión 10 de la sección 14).
+- El usuario técnico del puente es un usuario interno con contraseña aleatoria larga y **API key** de Odoo 14. La llave vive solo en el equipo del puente, como variable de entorno o *secret* de Docker; nunca en el repositorio ni en Odoo en texto plano.
+- `imago.printer.status` e `imago.printer.event`: lectura para Operador y Responsable; sin creación ni escritura vía ACL.
+- `imago.printer.bridge`: lectura para Operador y CRUD para Responsable. El usuario técnico no puede leer otros puentes.
+- El dashboard es solo para Operador y Responsable. Sus datos se calculan con los permisos del usuario que lo abre; solo el estado en vivo se lee con `sudo()`, porque el operador no tiene escritura sobre esos modelos.
+- Defensa en profundidad del puente: solo conecta a IPs privadas de su configuración (D-19), lista blanca de comandos (D-15), tiempos de espera cortos (3 s por consulta) y un máximo de bytes por respuesta (64 KB JSON/TCP, 2 MB por lectura de cámara).
+
+### 16.9 Puente local (`bridge/`)
+
+```
+bridge/
+├── README.md                 instalación y operación
+├── Dockerfile                python:3.11-slim, usuario sin privilegios
+├── requirements.txt          requests, Pillow
+├── imago_bridge/
+│   ├── __main__.py           ciclo principal, señales, backoff
+│   ├── config.py             variables de entorno (ODOO_URL, ODOO_DB, ODOO_LOGIN, ODOO_API_KEY)
+│   ├── odoo_client.py        execute_kw: get_config / push_telemetry
+│   ├── schema.py             PrinterStatus (dataclass inmutable) + normalización
+│   ├── drivers/
+│   │   ├── base.py           interfaz Driver.read() -> PrinterStatus; lista blanca
+│   │   ├── creality_box.py
+│   │   └── flashforge_tcp.py
+│   └── camera.py             extracción de un cuadro JPEG del MJPEG
+└── tests/                    pytest, con las respuestas reales capturadas el 21-Oct-2026 (sin datos sensibles)
+```
+
+**Driver `creality_box`:**
+- `GET http://host:port/protocal.csp?fname=Info&opt=main&function=get`, con timeout de 3 s.
+- Normalización (los códigos se confirman en V-02):
+  - `connect = 0` → `offline`
+  - `err`/`error ≠ 0` → `error`
+  - `pause = 1` → `paused`
+  - `state = 1` → `printing`
+  - `state = 2` → `finished`
+  - `state = 0` → `idle`
+  - cualquier otro valor → `unknown`
+- `progress = printProgress`, `nozzle_temp = nozzleTemp`, `bed_temp = bedTemp`, `layer`/`layer_total = layer`/`TotalLayer`.
+- `time_left_min = printLeftTime / 60` y `job_time_min = printJobTime / 60` (las unidades se confirman en V-02).
+- Los targets de temperatura quedan vacíos (el JSON no los trae).
+- Todo campo no listado se descarta antes de salir del driver.
+
+**Driver `flashforge_tcp`:**
+- Por ciclo: abrir conexión, `~M601 S1` (ignorar `Control failed`), `~M119`, `~M105`, `~M27`, `~M602` y cerrar. `~M115` solo al arrancar.
+- Nunca dejar la conexión abierta entre ciclos.
+- Normalización de `MachineStatus` (valores por confirmar en V-03): `READY` → `idle`; `BUILDING_FROM_SD` → `printing`; `PAUSED` → `paused`; `BUILDING_COMPLETED` → `finished`; cualquier otro → `unknown`.
+- `M105 T0:a/b B:c/d` → temperaturas y targets.
+- `M27 SD printing byte x/100` → `progress`; `Layer: a/b` → `layer`/`layer_total`.
+- `CurrentFile` → `file_name`.
+- `time_left_min` se estima con el avance y el tiempo transcurrido desde que el driver vio el arranque. Si el avance es menor que 5 %, queda vacío.
+
+**Cámara:** lee `camera_url` hasta el primer cuadro completo (`FF D8` … `FF D9`) y cierra la conexión. Reduce la foto a 480 px de ancho con calidad 70 (≈25 KB) y la envía cada `snapshot_seconds`.
+
+**Fallos y consumo de red:**
+- Si Odoo no responde, el puente reintenta con *backoff* exponencial (hasta 60 s) y sigue leyendo; envía solo el último estado, sin cola de historial.
+- Si una impresora no responde, se reporta `reachable: false`.
+- Con 3 impresoras, cada 10 s y fotos cada 30 s de la Adventurer, el tráfico de subida es menor a 2 KB/s.
+
+### 16.10 Dashboard (acción cliente)
+
+- Acción `imago_3dp.action_print_dashboard`, primer elemento del menú *Impresión 3D → Dashboard* (Operador). Se asigna como acción inicial de los operadores en la configuración (16.12).
+- Datos: método `@api.model get_dashboard_data()` del modelo abstracto `imago.print.dashboard`, llamado con `this._rpc`. Verifica el grupo Operador y devuelve un solo JSON con impresoras, cola, alertas e indicadores. Las fotos se cargan con `/web/image/imago.printer.status/<id>/snapshot?unique=<snapshot_at>`.
+- Refresco: estado en vivo cada 10 s; indicadores cada 60 s. **Se pausa** mientras la pestaña está oculta (`document.visibilityState`).
+
+**Contenido (de arriba abajo):**
+
+1. **Indicadores:**
+   - Imprimiendo n/N
+   - En cola
+   - Atrasadas (`is_late`)
+   - Carretes bajos (`spool_state = low`)
+   - Tasa de fallos de los últimos 7 días
+   - Puente en línea / desconectado
+2. **Una tarjeta por impresora** (`is_3d_printer`, incluidas las que no tienen driver):
+   - Código, modelo y badge de `live_state` (color por estado).
+   - **Indicador circular de avance** (gauge de ECharts).
+   - Temperaturas de boquilla y cama (actual/objetivo).
+   - Capa x/y, tiempo restante y hora estimada de fin.
+   - Intento y solicitud de Odoo en curso (folio, título, solicitante) y WO `[MCH]`.
+   - Carrete montado con barra de gramos restantes. Si `est_grams` del intento supera los gramos restantes, aviso "Filamento insuficiente".
+   - Foto de la cámara, si existe, y antigüedad del dato ("hace 12 s").
+   - Botones que reutilizan las acciones de v0.1: abrir solicitud, [Iniciar intento] / [Terminar intento], [Montar carrete].
+3. **Alertas abiertas** (16.7) con enlace al registro.
+4. **Cola de impresión:** solicitudes `submitted`/`queued` ordenadas como la cola, con prioridad, fecha requerida (en rojo si está atrasada), material e impresora prevista.
+5. **Gráficas (ECharts):**
+   - Ocupación por impresora en los últimos 7 días, horas por día: desde `mrp.workcenter.productivity` de los centros `is_3d_printer`, la misma fuente que el reporte de ocupación de v0.1.
+   - Pareto de causas de falla de los últimos 30 días.
+   - Gramos consumidos por propósito por semana (últimas 8 semanas, de `imago.print.consumption`).
+   - Tasa de éxito por impresora (últimos 30 días).
+
+Diseño: tarjetas en una cuadrícula adaptable (1 columna en móvil, 2–4 en escritorio), colores de la paleta de Odoo 14 y textos en español. Se puede usar en una pantalla mural en pantalla completa (F11) con un usuario operador.
+
+### 16.11 Puntos [VERIFICAR] de v0.2
+
+| ID | Punto | Cómo verificar / fallback |
+|---|---|---|
+| V-01 | Montar un componente OWL 1 dentro de una acción cliente de Odoo 14 (`AbstractAction` + `ComponentWrapper` de `web.OwlCompatibility`) y la carga diferida con `jsLibs` | Leer `addons/web/static/src/js` de 14. Fallback: widget clásico (`AbstractAction` + plantillas QWeb) y carga de ECharts con `ajax.loadJS`. |
+| V-02 | Códigos de `state` de la Creality Box, significado de `connect`/`err`/`error`/`pause`, y unidades de `printLeftTime`/`printJobTime` | Capturar el JSON cada 10 s durante una impresión real: arranque, pausa, reanudación, fin, cancelación, y apagando la impresora con el módulo encendido. Actualizar la tabla de 16.9 y los fixtures. |
+| V-03 | Valores de `MachineStatus` de la Adventurer 4 y significado de `M27` (¿porcentaje o bytes?) durante una impresión | Mismo procedimiento. Confirmar también que consultar cada 10 s **con FlashPrint abierto** no interrumpe la impresión ni desconecta FlashPrint. |
+| V-04 | Lectura de cama `B:5` en reposo (Adventurer 4) | Comparar con la pantalla de la impresora en frío y calentando. Si el valor es basura en reposo, mostrarlo solo cuando el target sea > 0. |
+| V-05 | API keys de Odoo 14 para un usuario técnico (cómo se generan si nadie inicia sesión con él) y `execute_kw` con API key detrás del proxy de `erp.imago.aero` | Probar en `manuf_test`. Fallback: contraseña aleatoria larga del usuario técnico (sigue siendo autenticación estándar). |
+| V-06 | Crecimiento del filestore al reemplazar `snapshot` (`attachment=True`) cada 30 s | Confirmar que el adjunto anterior queda sin referencia y lo borra el GC de filestore de Odoo 14 (autovacuum). Fallback: guardar la foto en un solo `ir.attachment` reutilizado o bajar la frecuencia. |
+| V-07 | ¿La Creality Box expone nombre de archivo o temperaturas objetivo en otro endpoint de solo lectura? | Revisar la integración comunitaria y el tráfico de Creality Print (solo peticiones `function=get`). Si no, dejar esos campos vacíos. |
+
+### 16.12 Configuración v0.2 (después de actualizar el módulo)
+
+1. TI: reservar en DHCP las IPs de las impresoras y, de preferencia, aislarlas en una VLAN o SSID (16.2).
+2. Crear el usuario técnico "Puente impresoras 3D" con solo el grupo *Puente de impresoras (técnico)* y generar su API key (V-05).
+3. Crear el registro *Impresión 3D → Configuración → Puentes* y ligarlo a ese usuario.
+4. En cada centro de trabajo impresora, pestaña "Conexión": driver, IP, puerto (se propone solo), cámara y puente. Para los valores actuales, ver 16.2.
+5. Instalar el puente en el equipo de la planta (`bridge/README.md`): `docker run` con `ODOO_URL=https://erp.imago.aero`, `ODOO_DB`, `ODOO_LOGIN` y `ODOO_API_KEY`.
+6. Asignar la acción *Dashboard de impresión 3D* como **Acción inicial** de los usuarios operadores (*Ajustes → Usuarios → Preferencias*).
+
+### 16.13 Criterios de aceptación v0.2
+
+Pruebas de Odoo en `tests/` (mismo comando que v0.1):
+
+| ID | Criterio |
+|---|---|
+| A-19 | La acción del dashboard existe y `get_dashboard_data()` devuelve impresoras, cola, alertas e indicadores para un Operador; un Solicitante recibe `AccessError`. |
+| A-20 | `printer_host` acepta solo IPv4 privada; nombres DNS, IPs públicas, loopback y link-local lanzan `ValidationError`. El onchange del driver propone el puerto y la URL de cámara. `camera_url` con un host distinto al de la impresora se rechaza. |
+| A-21 | `get_config()` y `push_telemetry()` funcionan con el usuario del puente y lanzan `AccessError` con cualquier otro usuario, incluido un Operador. |
+| A-22 | `push_telemetry()` rechaza una impresora que no pertenece al puente y valores fuera de rango, sin afectar a las demás impresoras válidas del mismo lote. |
+| A-23 | Un lote con una clave fuera del esquema (p. ej. `wifipasswd`) se rechaza para esa impresora y ese valor no queda guardado en ningún modelo ni en el log de Odoo. |
+| A-24 | El paso `idle → printing` crea el evento `started`; `printing → finished` con intento `running` crea, pasados los minutos configurados, **una** actividad "Cerrar intento" (no se duplica en pushes posteriores). |
+| A-25 | `printing` sin WO en progreso crea un solo evento `unregistered` y su alerta, que se cierra cuando el operador inicia el intento. |
+| A-26 | Con `received_at` más antiguo que `print3d_telemetry_stale_s`, `live_state = 'stale'`; sin driver, `no_link`. |
+| A-27 | Ningún push cambia `state` de solicitudes, `result` de intentos ni genera movimientos de stock. |
+| A-28 | Una foto que no es JPEG o que pasa de 512 KB se descarta y el resto del estado sí se guarda. |
+| A-29 | Cambiar la IP de una impresora incrementa `config_version` del puente y `push_telemetry` devuelve la versión nueva. |
+| A-30 | El módulo actualiza de 14.0.1.0.0 a 14.0.2.0.0 sin perder datos, y las 66 pruebas de v0.1 siguen pasando. |
+
+Pruebas del puente en `bridge/tests/` (`pytest`):
+
+| ID | Criterio |
+|---|---|
+| B-01 | El parser de la Creality Box convierte el JSON capturado (sin datos sensibles) al esquema común y **no** deja pasar `wifipasswd`, `ssid`, `apclissid`, `apclimac` ni `ownerId`. |
+| B-02 | El parser de Flashforge convierte las respuestas capturadas de `M115/M119/M105/M27`, incluido `Control failed` en `M601`. |
+| B-03 | Los drivers rechazan cualquier comando fuera de la lista blanca (D-15); el driver Creality nunca arma una URL con `function=set`. |
+| B-04 | La extracción de cámara obtiene un JPEG válido de un flujo MJPEG grabado y respeta el límite de bytes. |
+| B-05 | Si Odoo no responde, el puente aplica *backoff* sin terminar. Si una impresora no responde, se reporta `reachable: false` y las demás se envían igual. |
+| B-06 | El puente rechaza IPs no privadas aunque vengan de la configuración de Odoo. |
+
+### 16.14 Fases de entrega
+
+| Fase | Contenido | Depende de |
+|---|---|---|
+| F1 | Dashboard con datos de Odoo solamente (indicadores, cola, tarjetas con el estado de Odoo, gráficas) y acción inicial de operadores. A-19, A-30. | — |
+| F2 | Campos de conexión, modelos de puente, estado y evento, `get_config`/`push_telemetry`, puente con los dos drivers y fotos de la Adventurer. A-20…A-23, A-26…A-29, B-01…B-06. | V-02, V-03, V-05 |
+| F3 | Cruce impresora ↔ Odoo, eventos, alertas y cron. A-24, A-25. | F2 en operación ~1 semana para afinar umbrales |
+
+### 16.15 Backlog v0.2+
+
+| ID | Idea |
+|---|---|
+| REQ-3DP-108 | Video en vivo de la cámara en el dashboard (el puente sirve HTTPS con certificado válido en la red local, o un túnel). |
+| REQ-3DP-109 | Prellenar los gramos del asistente *Terminar intento* con el consumo que reporte la impresora (si algún driver lo da). |
+| REQ-3DP-110 | Vista de dashboard de solo lectura para solicitantes ("¿cuándo sale mi pieza?"). |
+| REQ-3DP-111 | Disponibilidad (OEE simplificado) por impresora a partir de `imago.printer.event`. |
+| REQ-3DP-112 | Control remoto (pausar/detener). **Fuera de alcance por seguridad**: solo si las impresoras quedan en una red aislada y con confirmación en Odoo. |

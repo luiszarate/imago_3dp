@@ -18,6 +18,14 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 - v0.1 (14.0.1.0.0) **implementada**: modelos, asistentes, vistas, seguridad, datos y 66 pruebas.
 - Pruebas: 66/66 OK en Odoo 14 CE (base sin demo y base nueva con demo). Desinstalación limpia verificada.
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
+- v0.2 (14.0.2.0.0) **especificada** en `SPEC.md` §16, sin código todavía: dashboard del operador (acción cliente + ECharts), puente local `bridge/` y drivers de impresoras. Fases F1 → F3. Antes de F2 hay que resolver V-02/V-03 con una impresión real.
+
+## Reglas de diseño v0.2 (no romper al implementar)
+- Odoo está en AWS: **el puente envía** el estado a Odoo (`execute_kw` con API key de un usuario técnico). Odoo nunca se conecta a la planta.
+- **Solo lectura:** lista blanca de comandos (Creality solo `function=get`; Flashforge solo `~M601 S1/~M602/~M115/~M119/~M105/~M27`). Ningún método de Odoo manda órdenes a una impresora.
+- **Lista blanca de campos:** el JSON de la Creality Box trae la contraseña WiFi (`wifipasswd`) y otros datos de red. Se descartan en el puente y Odoo rechaza las claves desconocidas.
+- La telemetría **no** cambia estados de solicitud, resultados de intento ni stock; solo crea eventos, alertas y actividades.
+- El estado en vivo va en `imago.printer.status`, no en `mrp.workcenter`. Las IPs se aceptan solo como IPv4 privada literal.
 
 ## Puntos clave del diseño (no romper)
 - `print_request._ensure_production`: la MO necesita un movimiento de componente *marcador* de 0 g; sin él Odoo 14 no confirma la MO.

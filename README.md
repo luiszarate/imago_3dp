@@ -62,6 +62,15 @@ docker run --rm --platform linux/amd64 --network imago3dp-net -e HOST=imago3dp-d
 - Los ajustes de carrete usan `stock.inventory` y se validan como superusuario (Odoo exige el grupo Gerente de inventario) tras verificar el grupo Operador 3D.
 - Fuera de alcance v0.1: alias de correo, lectura de G-code/3MF, costeo por proyecto, Gantt, mantenimiento, APIs de impresoras (ver `SPEC.md` §13).
 
+## Próxima versión: v0.2 (especificada, sin desarrollar)
+`SPEC.md` §16 define la versión `14.0.2.0.0`:
+- **Dashboard del operador** como página inicial: una acción cliente de Odoo con gráficas Apache ECharts.
+- **Puente local** (`bridge/`, Python en Docker): lee las impresoras por IP en la red de la planta y envía el estado a Odoo por JSON-RPC con API key.
+- **Drivers de solo lectura** para la Creality CR-M4 (HTTP puerto 81) y la Flashforge Adventurer 4 (TCP 8899 y cámara MJPEG en el 8080).
+- **Cruce impresora ↔ Odoo** con alertas: impresión no registrada, impresión terminada con intento abierto, error, sin comunicación.
+
+Los hallazgos del reconocimiento de red y los riesgos de seguridad están en §16.2.
+
 ## Estructura
 ```
 models/    filament_material, print_purpose, print_request, print_job, print_consumption,
