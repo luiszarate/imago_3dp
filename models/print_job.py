@@ -26,6 +26,7 @@ FAILURE_REASONS = [
 RESULTS_REQUIRING_REASON = ('partial', 'failed')
 # Worst first: the printer indicators of a combined plate use its worst result.
 RESULT_SEVERITY = ('running', 'failed', 'partial', 'ok', 'cancelled')
+MAX_PRINT_MINUTES = 7 * 24 * 60
 # Set only by imago.print.batch (as superuser, after its own checks).
 BATCH_FIELDS = ('batch_id', 'share')
 
@@ -151,6 +152,19 @@ class PrintJob(models.Model):
             raise UserError(_('No se puede borrar un intento con consumo de filamento registrado.'))
         return super().unlink()
 
+    def _default_print_minutes(self):
+        """Prefill for the real print time: what the printer reported for this print, else the timer."""
+        self.ensure_one()
+        status = self.env['imago.printer.status']._for_printer(self.workcenter_id)
+        if status and self.date_start and status.print_started_at \
+                and status.print_started_at >= self.date_start - timedelta(minutes=30):
+            detected = status._detected_print_minutes()
+            if detected:
+                return detected
+        if not self.date_start:
+            return 0
+        return max(round((fields.Datetime.now() - self.date_start).total_seconds() / 60.0), 1)
+
     def _action_open_finish_wizard(self, cancel_request=False):
         self.ensure_one()
         context = {'default_job_id': self.id}
@@ -175,7 +189,7 @@ class PrintJob(models.Model):
         return self._action_open_finish_wizard()
 
     def _finish(self, result, pieces_ok, lines, failure_reason=False, failure_note=False, labor_minutes=0,
-                cancelling=False, from_batch=False):
+                cancelling=False, from_batch=False, print_minutes=0):
         """Close a running attempt.
 
         :param lines: iterable of (lot, grams) captured by the operator.
@@ -183,6 +197,8 @@ class PrintJob(models.Model):
             combined print, all together (private parameter, not reachable through RPC).
         """
         self.ensure_one()
+        self._check_print_minutes(print_minutes)
+        self._check_print_window(print_minutes)
         if self.batch_id and not from_batch:
             raise UserError(_('El intento %(job)s es parte de la impresión combinada %(batch)s: termínala '
                               'completa desde [Terminar intento].', job=self.name, batch=self.batch_id.name))
@@ -192,6 +208,11 @@ class PrintJob(models.Model):
         if self.workorder_id:
             self.workorder_id.button_finish()
             self.env['mrp.workcenter']._invalidate_printer_status()
+        date_end = fields.Datetime.now()
+        if print_minutes and self.date_start:
+            # Real print time captured by the operator (prefilled from the printer).
+            date_end = self.date_start + timedelta(minutes=print_minutes)
+            self._set_machine_minutes(print_minutes)
         keep_reason = result in RESULTS_REQUIRING_REASON + ('cancelled',) and failure_reason
         self.write({
             'result': result,
@@ -199,13 +220,36 @@ class PrintJob(models.Model):
             'failure_reason': failure_reason if keep_reason else False,
             'failure_note': failure_note if keep_reason else False,
             'labor_minutes': labor_minutes,
-            'date_end': fields.Datetime.now(),
+            'date_end': date_end,
         })
         if labor_minutes > 0:
             self._create_labor_workorder(labor_minutes)
         self.request_id._after_job_finished(self, cancelling=cancelling)
         self.consumption_ids.mapped('lot_id')._spool_notify_low(request=self.request_id)
         return True
+
+    def _set_machine_minutes(self, minutes):
+        """Make the [MCH] timer (printer occupancy) last exactly ``minutes``."""
+        self.ensure_one()
+        logs = self.workorder_id.time_ids.sorted('date_start')
+        if not logs:
+            return
+        before = sum(log.duration for log in logs[:-1])
+        last = logs[-1]
+        last.sudo().write({'date_end': last.date_start + timedelta(minutes=max(minutes - before, 0.0))})
+
+    def _check_print_window(self, print_minutes):
+        """The real print minutes cannot end in the future (captured minutes rule, end time follows)."""
+        self.ensure_one()
+        if print_minutes and self.date_start \
+                and self.date_start + timedelta(minutes=print_minutes) > fields.Datetime.now() + timedelta(minutes=5):
+            raise UserError(_('Los minutos reales de impresión (%s) superan el tiempo transcurrido desde el inicio '
+                              'del intento.') % print_minutes)
+
+    @api.model
+    def _check_print_minutes(self, print_minutes):
+        if print_minutes and not 0 < print_minutes <= MAX_PRINT_MINUTES:
+            raise UserError(_('Los minutos reales de impresión deben estar entre 1 y %s.') % MAX_PRINT_MINUTES)
 
     def _validate_finish(self, result, pieces_ok, lines, failure_reason, failure_note, labor_minutes):
         if self.result != 'running':

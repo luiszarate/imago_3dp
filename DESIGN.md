@@ -296,6 +296,13 @@ Esquinas apenas suavizadas (4 px) en paneles, tarjetas, estaciones y en el carte
 - **Banda:** Libre en correcto, Imprimiendo en información, Fuera de servicio en inactivo; palabra grande con ícono y "Fin ≈ hh:mm" a la derecha.
 - **Movimiento:** el engrane de Imprimiendo gira lento (6 s, lineal, infinito).
 
+### Lectura en vivo
+- **Bloque** dentro de la estación, entre el cuerpo y el carrete: fondo `p3d-page`, línea superior de 1 px `p3d-line`, padding 8 × 16 px. Solo aparece en impresoras con conexión.
+- **Encabezado:** "Impresora: <estado>" con ícono Font Awesome y el color del estado (información imprimiendo, crítico en error, correcto terminada, `p3d-idle` sin datos o apagada); a la derecha, la antigüedad del dato ("hace 12 s") en tinta tenue.
+- **Métricas** en una fila que se envuelve (`small`, tinta normal): boquilla y cama "actual/objetivo °C", capa, minutos imprimiendo y faltantes; sin datos frescos no se muestran.
+- **Foto** de la cámara a lo ancho, 4:3, radio 4 px, `object-fit: cover`; en Modo pantalla, máximo 9rem de alto.
+- El medidor de avance dice "en vivo" cuando la impresora reporta avance y "estimado por tiempo" cuando no: la fuente del dato siempre es visible.
+
 ### Sellos de intento
 - **Estilo:** texto y borde en el color del resultado (OK correcto, Parcial aviso, Fallido crítico, Cancelado inactivo), mayúsculas, causa en minúsculas tras " · ". Los intentos terminados quedan sellados en su estación.
 

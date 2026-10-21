@@ -16,6 +16,9 @@
                         <field name="result" widget="radio"/>
                         <field name="pieces_planned"/>
                         <field name="pieces_ok"/>
+                        <field name="print_minutes"/>
+                        <field name="print_date_start"/>
+                        <field name="print_date_end"/>
                         <field name="labor_minutes"/>
                     </group>
                     <group attrs="{'invisible': [('result', 'not in', ('partial', 'failed', 'cancelled'))]}">

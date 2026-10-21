@@ -45,8 +45,8 @@
             </div>
 
             <p class="o_p3d_source">
-                Estado según los registros de Odoo; el avance es una estimación por tiempo.
-                La lectura en vivo de las impresoras llega con el puente local (fase F2).
+                Estado según los registros de Odoo y, en las impresoras conectadas, lo que reporta cada una a
+                través del puente local. Sin lectura en vivo, el avance es una estimación por tiempo.
             </p>
         </div>
     </t>
@@ -60,6 +60,10 @@
         <span t-attf-class="o_p3d_count #{kpis.late ? 'o_p3d_count_critical' : ''}">
             <i t-if="kpis.late" class="fa fa-exclamation-circle" role="img" aria-hidden="true"/>
             <strong t-esc="kpis.late"/> atrasada<t t-if="kpis.late != 1">s</t>
+        </span>
+        <span t-if="kpis.bridges" t-attf-class="o_p3d_count #{kpis.bridges.online &lt; kpis.bridges.total ? 'o_p3d_count_critical' : ''}">
+            <i t-attf-class="fa #{kpis.bridges.online &lt; kpis.bridges.total ? 'fa-chain-broken' : 'fa-link'}" role="img" aria-hidden="true"/>
+            Puente <strong t-esc="kpis.bridges.online &lt; kpis.bridges.total ? 'desconectado' : 'en línea'"/>
         </span>
         <span class="o_p3d_count">
             Fallos 7 d:
@@ -143,16 +147,36 @@
 
                 <div t-if="printer.job" class="o_p3d_meter">
                     <div class="o_p3d_meter_label">
-                        <span><strong><t t-esc="printer.progress_label"/> %</strong> estimado por tiempo</span>
+                        <span><strong><t t-esc="printer.progress_label"/> %</strong> <t t-esc="printer.progress_source"/></span>
                         <span t-attf-class="#{printer.job.overdue ? 'o_p3d_text_warning' : 'o_p3d_muted'}">
                             <t t-esc="printer.job.elapsed_minutes"/> de <t t-esc="printer.job.est_minutes or '?'"/> min
                         </span>
                     </div>
-                    <div class="o_p3d_track" role="progressbar" t-att-aria-valuenow="printer.job.progress_est"
-                         aria-valuemin="0" aria-valuemax="100" aria-label="Avance estimado">
-                        <div class="o_p3d_track_fill" t-attf-style="width: #{printer.job.progress_est}%"/>
+                    <div class="o_p3d_track" role="progressbar" t-att-aria-valuenow="printer.progress_label"
+                         aria-valuemin="0" aria-valuemax="100" aria-label="Avance">
+                        <div class="o_p3d_track_fill" t-attf-style="width: #{printer.progress_label}%"/>
                     </div>
                 </div>
+            </div>
+
+            <div t-if="printer.live" t-attf-class="o_p3d_live o_p3d_live_#{printer.live.state}">
+                <div class="o_p3d_meter_label">
+                    <a href="#" t-att-class="printer.live.status_id ? 'o_p3d_open o_p3d_live_state' : 'o_p3d_live_state'"
+                       data-model="imago.printer.status" t-att-data-id="printer.live.status_id">
+                        <i t-attf-class="fa #{printer.live_icon}" role="img" aria-hidden="true"/>
+                        Impresora: <strong t-esc="printer.live.state_label"/>
+                    </a>
+                    <span t-if="printer.live_age" class="o_p3d_muted o_p3d_small" t-esc="printer.live_age"/>
+                </div>
+                <div t-if="printer.live_metrics.length" class="o_p3d_live_metrics o_p3d_small">
+                    <span t-foreach="printer.live_metrics" t-as="metric" t-esc="metric"/>
+                </div>
+                <div t-if="printer.live.error_text" class="o_p3d_text_critical o_p3d_small" t-esc="printer.live.error_text"/>
+                <div t-elif="printer.live.file_name" class="o_p3d_muted o_p3d_small o_p3d_live_file">
+                    Archivo: <t t-esc="printer.live.file_name"/>
+                </div>
+                <img t-if="printer.snapshot_url" class="o_p3d_snapshot" t-att-src="printer.snapshot_url"
+                     t-att-alt="'Cámara de ' + printer.name" loading="lazy"/>
             </div>
 
             <div class="o_p3d_station_spool">

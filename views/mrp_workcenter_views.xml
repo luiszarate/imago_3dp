@@ -27,6 +27,30 @@
                         </group>
                     </group>
                 </page>
+                <page string="Conexión" name="print3d_link" attrs="{'invisible': [('is_3d_printer', '=', False)]}">
+                    <group>
+                        <group string="Lectura en la red de la planta">
+                            <field name="printer_driver"/>
+                            <field name="printer_host" placeholder="192.168.0.61"
+                                   attrs="{'invisible': [('printer_driver', '=', 'none')],
+                                           'required': [('printer_driver', '!=', 'none')]}"/>
+                            <field name="printer_port" attrs="{'invisible': [('printer_driver', '=', 'none')],
+                                                               'required': [('printer_driver', '!=', 'none')]}"/>
+                            <field name="camera_url" attrs="{'invisible': [('printer_driver', '=', 'none')]}"/>
+                            <field name="bridge_id" options="{'no_create': True}"
+                                   attrs="{'invisible': [('printer_driver', '=', 'none')],
+                                           'required': [('printer_driver', '!=', 'none')]}"/>
+                        </group>
+                        <group string="Estado en vivo" attrs="{'invisible': [('printer_driver', '=', 'none')]}">
+                            <field name="live_state"/>
+                            <field name="live_status_id" string="Detalle"/>
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        Solo lectura: el puente local consulta la impresora y envía su estado a Odoo; nunca le
+                        manda órdenes. La IP debe ser una IPv4 privada; conviene reservarla en el router.
+                    </p>
+                </page>
             </xpath>
         </field>
     </record>

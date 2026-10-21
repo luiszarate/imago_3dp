@@ -16,6 +16,9 @@
     <menuitem id="menu_print3d_printers" name="Impresoras" parent="menu_print3d_root"
               action="action_printer" sequence="20" groups="imago_3dp.group_print_operator"/>
 
+    <menuitem id="menu_print3d_printers_live" name="Estado en vivo" parent="menu_print3d_root"
+              action="action_printer_status" sequence="25" groups="imago_3dp.group_print_operator"/>
+
     <menuitem id="menu_print3d_spools" name="Carretes" parent="menu_print3d_root"
               action="action_spool" sequence="30" groups="imago_3dp.group_print_operator"/>
 
@@ -29,6 +32,8 @@
               action="action_print_consumption_report" sequence="30"/>
     <menuitem id="menu_print3d_report_batches" name="Impresiones combinadas" parent="menu_print3d_reports"
               action="action_print_batch" sequence="35"/>
+    <menuitem id="menu_print3d_report_events" name="Eventos de impresoras" parent="menu_print3d_reports"
+              action="action_printer_event" sequence="38"/>
     <menuitem id="menu_print3d_report_occupancy" name="Ocupación de impresoras" parent="menu_print3d_reports"
               action="action_printer_occupancy" sequence="40"/>
 
@@ -40,6 +45,8 @@
               action="action_filament_material" sequence="20"/>
     <menuitem id="menu_print3d_config_purposes" name="Propósitos" parent="menu_print3d_config"
               action="action_print_purpose" sequence="30"/>
+    <menuitem id="menu_print3d_config_bridges" name="Puentes de impresoras" parent="menu_print3d_config"
+              action="action_printer_bridge" sequence="35"/>
     <menuitem id="menu_print3d_config_settings" name="Ajustes" parent="menu_print3d_config"
               action="action_print3d_settings" sequence="40" groups="base.group_system"/>
 </odoo>

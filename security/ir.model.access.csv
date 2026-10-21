@@ -29,3 +29,7 @@ access_print_batch_manager,imago.print.batch manager,model_imago_print_batch,gro
 access_batch_finish_wizard,imago.print.batch.finish.wizard,model_imago_print_batch_finish_wizard,group_print_operator,1,1,1,0
 access_batch_finish_wizard_lot,imago.print.batch.finish.wizard.lot,model_imago_print_batch_finish_wizard_lot,group_print_operator,1,1,1,1
 access_batch_finish_wizard_request,imago.print.batch.finish.wizard.request,model_imago_print_batch_finish_wizard_request,group_print_operator,1,1,1,1
+access_printer_bridge_operator,imago.printer.bridge operator,model_imago_printer_bridge,group_print_operator,1,0,0,0
+access_printer_bridge_manager,imago.printer.bridge manager,model_imago_printer_bridge,group_print_manager,1,1,1,1
+access_printer_status_operator,imago.printer.status operator,model_imago_printer_status,group_print_operator,1,0,0,0
+access_printer_event_operator,imago.printer.event operator,model_imago_printer_event,group_print_operator,1,0,0,0

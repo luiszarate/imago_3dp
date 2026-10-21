@@ -16,9 +16,9 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 
 ## Estado
 - v0.1 (14.0.1.0.0) **implementada** (66 pruebas propias; desinstalación limpia verificada).
-- Pruebas actuales: **105/105 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada).
+- Pruebas actuales: **129/129 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada + telemetría) y **215** del puente (`bridge/tests`, pytest).
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
-- v0.2 (14.0.2.0.0) especificada en `SPEC.md` §16. **F1 implementada**: dashboard del operador (`imago.print.dashboard`, acción cliente `imago_3dp_dashboard`, ECharts 5.5.1 local). 80/80 pruebas OK y actualización desde 14.0.1.0.0 verificada (A-30). Pendientes: F2 (puente `bridge/` + drivers; antes resolver V-02/V-03 con una impresión real) y F3 (alertas).
+- v0.2 (`SPEC.md` §16) **implementada**: F1 dashboard (14.0.2.0.0), F2 puente + drivers + telemetría y F3 alertas (14.0.2.2.0). Pendiente: confirmar qué significa `state 4` + `err 1` de la CR-M4 tras detener una impresión (decisión 40), V-05 detrás del proxy de producción y V-06 (filestore) en `manuf_test`.
 - Impresión combinada (REQ-3DP-113, 14.0.2.1.0) **implementada** (`SPEC.md` §17; decisiones 33–39, incluida la revisión de código) y actualización desde 14.0.2.0.0 verificada.
 - Diseño: `PRODUCT.md`, `DESIGN.md` (+ `.impeccable/design.json`) y el brief/contrato de superficie en `.impeccable/surfaces/` (Impeccable). Estructura: franja de acciones sobre las estaciones, con Modo pantalla. Revisión final de diseño: *ship*. Cambios visuales al dashboard deben respetar los tokens y reglas de `DESIGN.md`.
 
@@ -29,6 +29,15 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 - Reparto por **mayor resto** (`_allocate`): nunca negativo y suma exacta; una parte que redondea a 0 g se rechaza antes de cerrar nada.
 - Indicadores de impresora: `counts_for_printer` + `printer_result` (peor resultado de la placa).
 - Los indicadores de solicitud usan `allocated_minutes` y los consumos propios.
+
+## Telemetría (no romper)
+- El usuario técnico del puente es **portal** + `group_print_bridge` (constraint); su API key la genera un administrador de accesos con *Generar API key*.
+- `get_config`/`push_telemetry` validan al usuario del puente y escriben como superusuario; `imago.printer.status`/`event` solo se escriben como superusuario (write/create bloqueados).
+- Claves desconocidas en una impresora la rechazan sin guardar su valor (la Creality Box expone la contraseña WiFi). `progress_known` distingue "sin avance" de 0 %.
+- Las alertas se abren una vez, se cierran solas (`alert_open`) y no se reabren antes de 10 min; la telemetría no cambia solicitudes, intentos ni stock.
+- Validación del lote: números finitos y acotados, texto sin caracteres de control, foto verificada con Pillow, nunca una excepción que aborte el lote.
+- Tiempo real: mandan los **minutos** capturados (prellenados con la impresora); la hora de fin se deriva y es editable.
+- El puente: solo lectura (Flashforge sin `~M601`), solo IPv4 privadas, `https` obligatorio, `offline` tras 3 lecturas fallidas.
 
 ## Reglas de diseño v0.2 (no romper al implementar)
 - Dashboard: los botones llaman por `/web/dataset/call_button` (con `_rpc` model/method la acción vuelve sin `views`). Plantillas QWeb clásicas: cálculos (`Math.*`) en el view model de JS, no en la plantilla. Modo pantalla debe limpiar las clases de `body`/`html` al salir de la acción.

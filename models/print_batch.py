@@ -164,7 +164,7 @@ class PrintBatch(models.Model):
             'context': {'default_batch_id': self.id},
         }
 
-    def _finish_combined(self, lot_lines, request_lines, labor_minutes=0):
+    def _finish_combined(self, lot_lines, request_lines, labor_minutes=0, print_minutes=0):
         """Close every attempt of the plate at once.
 
         :param lot_lines: iterable of (lot, grams) for the whole plate.
@@ -188,7 +188,7 @@ class PrintBatch(models.Model):
             job._finish(
                 line['result'], line['pieces_ok'], allocation[job],
                 failure_reason=line.get('failure_reason'), failure_note=line.get('failure_note'),
-                labor_minutes=labor[job], from_batch=True)
+                labor_minutes=labor[job], from_batch=True, print_minutes=print_minutes)
         self.sudo().write({'state': 'done', 'date_end': fields.Datetime.now()})
         self.message_post(body=_('Impresión combinada terminada.'))
         return True

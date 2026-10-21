@@ -22,6 +22,16 @@ class ResCompany(models.Model):
     print3d_labor_workcenter_id = fields.Many2one(
         'mrp.workcenter', string='Centro de mano de obra 3D',
         help='Centro de trabajo donde se registra la WO [LAB] de preparación y post-proceso.')
+    # Live printer telemetry (SPEC 16.5.5)
+    print3d_telemetry_stale_s = fields.Integer(
+        string='Sin datos después de (s)', default=60,
+        help='Segundos sin lecturas del puente para mostrar una impresora como "Sin datos".')
+    print3d_offline_alert_min = fields.Integer(
+        string='Alerta sin comunicación (min)', default=10,
+        help='Minutos sin comunicación, con una impresión en curso en Odoo, antes de alertar.')
+    print3d_finished_alert_min = fields.Integer(
+        string='Alerta de intento abierto (min)', default=5,
+        help='Minutos con la impresora terminada y el intento abierto en Odoo antes de pedir cerrarlo.')
 
     def _print3d_get_location(self):
         """Return the 3D filament location or raise a clear configuration error."""

@@ -3,12 +3,12 @@
 | Campo | Valor |
 |---|---|
 | Módulo | `imago_3dp` |
-| Versión objetivo | `14.0.1.0.0` (v0.1) · `14.0.2.0.0` (v0.2, sección 16) · `14.0.2.1.0` (impresión combinada, sección 17) |
+| Versión objetivo | `14.0.1.0.0` (v0.1) · `14.0.2.0.0` (v0.2 F1) · `14.0.2.1.0` (impresión combinada, sección 17) · `14.0.2.2.0` (v0.2 F2/F3) |
 | Plataforma | Odoo 14 Community Edition (Python 3.6–3.8) |
 | Empresa | Imago Aerospace |
 | Documento relacionado | `IMAGO_Holom_Odoo14_MRP_Plan_v0.1.docx` (secciones 4.1, 4.2, 4.4, 6.1) y `IMAGO_Manual_Piloto_MRP_Holom_Odoo14.pdf` |
 | Fecha | 13-Oct-2026 (v0.1) · 21-Oct-2026 (v0.2) |
-| Estado | v0.1 implementada · v0.2: F1 (dashboard) implementada; F2/F3 (puente, drivers, alertas) especificadas · impresión combinada (sección 17) implementada |
+| Estado | v0.1 implementada · v0.2: F1 (dashboard), F2 (puente, drivers, telemetría) y F3 (alertas) implementadas · impresión combinada (sección 17) implementada |
 
 ---
 
@@ -698,6 +698,14 @@ Verificación hecha leyendo `addons/mrp` y `addons/stock` de la imagen oficial `
 | 37 | 17 Indicadores | `counts_for_printer` filtra los indicadores de impresora: acción "Tasa de fallos" (dominio), KPI de fallos 7 d, causas de falla, resultados por impresora y sellos de la estación en el dashboard. El aviso de filamento insuficiente compara los gramos estimados de toda la placa. El Solicitante puede leer todas las combinadas (igual que las solicitudes). | 21-Oct-2026 |
 | 38 | 17.8 A-43 | Verificado: base 14.0.2.0.0 con 7 intentos actualizada a 14.0.2.1.0 → todos con `share = 1`, `counts_for_printer = True` y `allocated_minutes = duration_minutes`; 97/97 pruebas OK (105/105 tras la revisión, decisión 39). Flujo completo probado en el navegador (iniciar desde la cola del dashboard, tarjeta de estación, terminar: 60 g + 80 g en la MO de cada solicitud). | 21-Oct-2026 |
 | 39 | 17 Revisión de código | Correcciones de la revisión independiente: (1) **HIGH** un operador podía saltarse la combinada por RPC (`job.write({'batch_id': False})`, `batch.write({'state': 'done'})`): campos protegidos en `write`/`create` y ACL del operador sobre la combinada de solo lectura; (2) el reparto usa **mayor resto** (nunca negativo, suma exacta; antes 7 min entre 10 daba −2 al último); (3) si una parte redondea a 0 g se rechaza **antes** de cerrar cualquier intento, nombrando la solicitud; (4) los gramos estimados que el operador edita en el asistente sí se usan para el reparto y el intento líder; (5) los indicadores de impresora usan el peor resultado de la placa (D-26). Pruebas reforzadas (duraciones reales en A-37, minutos exactos en A-39, rutas y accesos) y 9 nuevas: escritura directa, 10 solicitudes, parte que redondea a 0, placa cancelada sin gramos, parte 0 cancelada, solicitud en post-proceso, peor resultado con dos carretes, gramos del asistente, entrega de la líder primero. 105/105 OK. | 21-Oct-2026 |
+| 40 | 16.11 **[VERIFICAR]** V-02 CR-M4 | **Se cumple en parte** (impresión real en la .248 lanzada desde USB, captura cada 15 s): precalentando `state 0` (boquilla 260 °C); imprimiendo `state 1` + `mcu_is_print 1` y el archivo en `print` (`BASESE~1.GCO`); `printProgress` 0–1 y capas 0 (sin avance real en impresiones desde USB); `printJobTime` en segundos; `printLeftTime` inservible (saltó de 13 h a 30 h). Al detenerse la impresión quedó `state 4` con `err 1` (`error 0`): **pendiente confirmar** si es cancelación o falla; mientras tanto se trata como error. No se observó `state 2` (terminada) en vivo. | 21-Oct-2026 |
+| 41 | 16.11 **[VERIFICAR]** V-03 / V-04 Adventurer 4 | **Se cumplen.** Imprimiendo `BUILDING_FROM_SD`, archivo, temperaturas con objetivo (`T0:240/240 B:105/105`), `M27` = **porcentaje** y capa (`Layer: 48/94`). Al terminar: 100 %, 94/94 y objetivos en 0 durante ~30 s, luego `READY` (nunca `BUILDING_COMPLETED`). Las consultas responden **sin** `~M601` y no interrumpieron la impresión ni a FlashPrint; se quitó `M601/M602` del driver. La cama marcó 5 °C solo en frío; imprimiendo 105 °C reales (V-04 resuelto). 2 de 94 lecturas tuvieron tiempo de espera. | 21-Oct-2026 |
+| 42 | 16.11 **[VERIFICAR]** V-05 API key | **Se cumple** (probado en local contra Odoo 14): `authenticate` + `execute_kw` con la API key de un usuario **portal** funciona y ese usuario no puede leer solicitudes. Odoo 14 solo deja crear claves desde la interfaz a usuarios internos, así que el puente tiene *Generar API key* (servidor, `res.users.apikeys._generate` como el usuario técnico; solo `base.group_erp_manager`) y *Revocar API keys*. Falta confirmar detrás del proxy de `erp.imago.aero`. | 21-Oct-2026 |
+| 43 | 16 F2 implementación | Odoo: `mrp_workcenter_link.py` (driver, IP privada literal, puerto, cámara en la misma IP, puente; cambiar cualquiera sube `config_version`), `printer_bridge.py` (API, límite de 3 s entre envíos, `clock_skew` si `sent_at` viene > 5 min adelantado), `printer_telemetry.py` (validación pura del contrato 16.6; claves desconocidas rechazan esa impresora sin guardar su valor), `printer_status.py` (último estado; `progress_known` distingue "sin avance" de 0 %; inicio/fin detectados), `printer_event.py` (eventos inmutables). Estado y eventos solo los escribe el sistema (superusuario). Puente en `bridge/` (169 pruebas pytest, solo biblioteca estándar). Prueba de punta a punta en la Mac: el puente real leyó las 3 impresoras y la Odoo local guardó estado, foto de la Adventurer y la alerta de error de la CR-M4. | 21-Oct-2026 |
+| 44 | 16.7 F3 alertas | Cuatro alertas, cada una abierta una vez y cerrada sola al desaparecer la condición (evento con `alert_open` + actividad "Alerta de impresora 3D"): `unregistered` (imprime sin WO en progreso), `error`, `offline` (sin datos > `print3d_offline_alert_min` con WO en progreso) y `finished_open` (la impresora terminó —fin detectado después del inicio del intento— y sigue en reposo > `print3d_finished_alert_min`). El precalentamiento de la CR-M4 (reposo) no dispara `finished_open`. Cron cada 5 min. En el dashboard las alertas abiertas entran a la franja de pendientes, y con lectura en vivo no se usa la heurística "¿ya terminó?". | 21-Oct-2026 |
+| 45 | Tiempo real de impresión | Petición del usuario: *Terminar intento* (individual y combinada) tiene **Minutos reales de impresión** como dato principal (el operador suele saber cuánto duró, no a qué hora terminó), prellenados con lo que reportó la impresora (`job_time_min` o la ventana inicio/fin detectada, si la impresión empezó después del intento) o, sin lectura, con el reloj. **Fin real de impresión** se calcula con los minutos y también es editable (al cambiarlo se recalculan los minutos). No se aceptan minutos que superen el tiempo transcurrido desde el inicio. Al terminar, la fecha de fin del intento y el último registro de productividad de la WO `[MCH]` se ajustan, así que la ocupación y los minutos por solicitud usan el tiempo real. | 21-Oct-2026 |
+| 46 | 16.11 V-06 / V-07 | V-06 (crecimiento del filestore por fotos) **sin verificar** todavía: se reemplaza un adjunto por foto; revisar en `manuf_test` tras unos días. V-07: no se usa ningún otro endpoint de la Creality Box (solo `function=get` de `Info`). | 21-Oct-2026 |
+| 47 | Revisión de seguridad F2 | Sin hallazgos críticos ni altos. Corregido: valores `NaN`/infinito y enteros absurdos se rechazan (rompían el JSON del dashboard), un valor hostil nunca aborta el lote, tope de impresoras por envío (2 × las del puente) y sin duplicados, la foto se mide antes de decodificarla y se verifica con Pillow, bloqueo de fila contra envíos simultáneos, formato estricto de `sent_at`, caracteres de control y bidireccionales eliminados del texto, el puente rechaza usuarios internos aunque los promuevan después, enfriamiento de 10 min antes de reabrir la misma alerta, purga de eventos de más de un año, actividades a nombre de OdooBot y la cámara solo en el endpoint del driver. En el puente: plazo total por lectura (no solo por *socket*), números y JSON hostiles convertidos en lectura fallida, texto saneado, imagen Docker fijada por *digest* y ejemplo `docker run` endurecido (215 pruebas). | 21-Oct-2026 |
 
 ---
 
@@ -935,7 +943,7 @@ Se evalúa en `push_telemetry` cuando cambia `state`, y periódicamente para las
 ### 16.8 Seguridad
 
 - Nuevo grupo `group_print_bridge` ("Puente de impresoras (técnico)"), sin menús. Solo puede llamar a `get_config` y `push_telemetry`; no tiene ACL de escritura directa sobre ningún modelo (las escrituras se hacen con `sudo()` acotado dentro de esos métodos, igual que en la decisión 10 de la sección 14).
-- El usuario técnico del puente es un usuario interno con contraseña aleatoria larga y **API key** de Odoo 14. La llave vive solo en el equipo del puente, como variable de entorno o *secret* de Docker; nunca en el repositorio ni en Odoo en texto plano.
+- El usuario técnico del puente es un **usuario portal** con solo `group_print_bridge` (no interno: un usuario interno es Solicitante y podría leer solicitudes) y una **API key** de Odoo 14 que genera un administrador de accesos con el botón *Generar API key* del puente (y *Revocar API keys*). La llave vive solo en el equipo del puente, como variable de entorno o *secret* de Docker; nunca en el repositorio ni en Odoo en texto plano.
 - `imago.printer.status` e `imago.printer.event`: lectura para Operador y Responsable; sin creación ni escritura vía ACL.
 - `imago.printer.bridge`: lectura para Operador y CRUD para Responsable. El usuario técnico no puede leer otros puentes.
 - El dashboard es solo para Operador y Responsable. Sus datos se calculan con los permisos del usuario que lo abre; solo el estado en vivo se lee con `sudo()`, porque el operador no tiene escritura sobre esos modelos.
@@ -986,6 +994,13 @@ bridge/
 - `time_left_min` se estima con el avance y el tiempo transcurrido desde que el driver vio el arranque. Si el avance es menor que 5 %, queda vacío.
 
 **Cámara:** lee `camera_url` hasta el primer cuadro completo (`FF D8` … `FF D9`) y cierra la conexión. Reduce la foto a 480 px de ancho con calidad 70 (≈25 KB) y la envía cada `snapshot_seconds`.
+
+**Ajustes al implementar (21-Oct-2026), por lo observado en las impresoras reales** (detalle en la sección 14, decisiones 40–44):
+- Solo biblioteca estándar de Python (sin `requests` ni Pillow): la foto se envía a su tamaño nativo (640×480, ≈70 KB) y se descarta localmente si pasa de 512 KB.
+- Flashforge: **sin** `~M601 S1`/`~M602`; las consultas responden sin tomar el control y así no se compite con FlashPrint. Lista blanca: `~M115` (una vez), `~M119`, `~M105`, `~M27`. `BUILDING_FROM_SD` con 100 % y calentadores en 0 = `finished`; después pasa directo a `READY`.
+- Creality: `state 1` (y `mcu_is_print 1`) = imprimiendo; `state 0` también durante el precalentamiento; en impresiones lanzadas desde USB `printProgress` queda en 0 (o 1) y las capas en 0, así que el avance se reporta como desconocido; `printJobTime` va en segundos.
+- Una impresora se reporta `offline` solo tras **3 lecturas fallidas seguidas** (ambos modelos tienen tiempos de espera esporádicos).
+- `ODOO_URL` debe ser `https`; `ODOO_API_KEY_FILE` para *secrets*; códigos de salida 2 (configuración) y 3 (credenciales rechazadas); lectura de impresoras en paralelo con límite de 25 s por ciclo.
 
 **Fallos y consumo de red:**
 - Si Odoo no responde, el puente reintenta con *backoff* exponencial (hasta 60 s) y sigue leyendo; envía solo el último estado, sin cola de historial.
@@ -1041,10 +1056,10 @@ Diseño: tarjetas en una cuadrícula adaptable (1 columna en móvil, 2–4 en es
 ### 16.12 Configuración v0.2 (después de actualizar el módulo)
 
 1. TI: reservar en DHCP las IPs de las impresoras y, de preferencia, aislarlas en una VLAN o SSID (16.2).
-2. Crear el usuario técnico "Puente impresoras 3D" con solo el grupo *Puente de impresoras (técnico)* y generar su API key (V-05).
-3. Crear el registro *Impresión 3D → Configuración → Puentes* y ligarlo a ese usuario.
+2. Crear el usuario técnico "Puente impresoras 3D" como **usuario portal** con solo el grupo *Puente de impresoras (técnico)* (sin acceso interno; el puente lo exige).
+3. Crear el registro *Impresión 3D → Configuración → Puentes de impresoras*, ligarlo a ese usuario y pulsar **Generar API key** (administrador de accesos); la clave se muestra una sola vez y se guarda en el equipo del puente (`ODOO_API_KEY` o `ODOO_API_KEY_FILE`).
 4. En cada centro de trabajo impresora, pestaña "Conexión": driver, IP, puerto (se propone solo), cámara y puente. Para los valores actuales, ver 16.2.
-5. Instalar el puente en el equipo de la planta (`bridge/README.md`): `docker run` con `ODOO_URL=https://erp.imago.aero`, `ODOO_DB`, `ODOO_LOGIN` y `ODOO_API_KEY`.
+5. Instalar el puente en el equipo de la planta (`bridge/README.md`): `docker run` con `ODOO_URL=https://erp.imago.aero`, `ODOO_DB`, `ODOO_LOGIN` y `ODOO_API_KEY` (o `ODOO_API_KEY_FILE`). El puente exige `https` salvo `BRIDGE_ALLOW_INSECURE_HTTP=1` (solo pruebas locales).
 6. Asignar la acción *Dashboard de impresión 3D* como **Acción inicial** de los usuarios operadores (*Ajustes → Usuarios → Preferencias*).
 
 ### 16.13 Criterios de aceptación v0.2

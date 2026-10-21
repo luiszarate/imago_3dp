@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Bridges (Configuración) -->
+    <record id="view_printer_bridge_tree" model="ir.ui.view">
+        <field name="name">imago.printer.bridge.tree</field>
+        <field name="model">imago.printer.bridge</field>
+        <field name="arch" type="xml">
+            <tree string="Puentes de impresoras">
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="workcenter_ids" widget="many2many_tags"/>
+                <field name="last_seen"/>
+                <field name="is_online"/>
+                <field name="bridge_version" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_printer_bridge_form" model="ir.ui.view">
+        <field name="name">imago.printer.bridge.form</field>
+        <field name="model">imago.printer.bridge</field>
+        <field name="arch" type="xml">
+            <form string="Puente de impresoras">
+                <header>
+                    <button name="action_generate_api_key" type="object" string="Generar API key"
+                            class="btn-primary" groups="base.group_erp_manager"
+                            confirm="Se creará una nueva API key para el usuario técnico. Se muestra una sola vez."/>
+                    <button name="action_revoke_api_keys" type="object" string="Revocar API keys"
+                            groups="base.group_erp_manager" attrs="{'invisible': [('api_key_count', '=', 0)]}"
+                            confirm="El puente dejará de poder enviar datos hasta que tenga una API key nueva."/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archivado" bg_color="bg-danger"
+                            attrs="{'invisible': [('active', '=', True)]}"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Puente cuarto de impresión"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="poll_seconds"/>
+                            <field name="snapshot_seconds"/>
+                            <field name="active" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="is_online"/>
+                            <field name="last_seen"/>
+                            <field name="bridge_version"/>
+                            <field name="config_version"/>
+                            <field name="api_key_count"/>
+                        </group>
+                    </group>
+                    <field name="workcenter_ids" readonly="1">
+                        <tree>
+                            <field name="name"/>
+                            <field name="printer_driver"/>
+                            <field name="printer_host"/>
+                            <field name="printer_port"/>
+                            <field name="live_state"/>
+                        </tree>
+                    </field>
+                    <p class="text-muted">
+                        El usuario técnico es un usuario portal con solo el grupo "Puente de impresoras (técnico)":
+                        así puede usar la API del puente pero no ve solicitudes ni inventario. Su API key se genera
+                        aquí con "Generar API key" y se configura en el equipo del puente. Las impresoras se ligan
+                        al puente en su pestaña "Conexión".
+                    </p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_printer_bridge" model="ir.actions.act_window">
+        <field name="name">Puentes de impresoras</field>
+        <field name="res_model">imago.printer.bridge</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <!-- Live status -->
+    <record id="view_printer_status_tree" model="ir.ui.view">
+        <field name="name">imago.printer.status.tree</field>
+        <field name="model">imago.printer.status</field>
+        <field name="arch" type="xml">
+            <tree string="Estado de impresoras" create="false" edit="false" delete="false"
+                  decoration-danger="state == 'error'" decoration-info="state == 'printing'"
+                  decoration-muted="is_stale">
+                <field name="workcenter_id"/>
+                <field name="state"/>
+                <field name="is_stale"/>
+                <field name="progress"/>
+                <field name="layer"/>
+                <field name="layer_total"/>
+                <field name="nozzle_temp"/>
+                <field name="bed_temp"/>
+                <field name="file_name"/>
+                <field name="received_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_printer_status_form" model="ir.ui.view">
+        <field name="name">imago.printer.status.form</field>
+        <field name="model">imago.printer.status</field>
+        <field name="arch" type="xml">
+            <form string="Estado de impresora" create="false" edit="false" delete="false">
+                <sheet>
+                    <field name="snapshot" widget="image" class="oe_avatar" options="{'size': [320, 240]}"
+                           attrs="{'invisible': [('snapshot', '=', False)]}"/>
+                    <div class="oe_title">
+                        <h1><field name="workcenter_id"/></h1>
+                        <h3><field name="state"/></h3>
+                    </div>
+                    <group>
+                        <group string="Impresión">
+                            <field name="file_name"/>
+                            <field name="progress_known" invisible="1"/>
+                            <field name="progress" attrs="{'invisible': [('progress_known', '=', False)]}"/>
+                            <field name="layer"/>
+                            <field name="layer_total"/>
+                            <field name="job_time_min"/>
+                            <field name="time_left_min"/>
+                            <field name="print_started_at"/>
+                            <field name="print_finished_at"/>
+                            <field name="error_text"/>
+                        </group>
+                        <group string="Temperaturas y comunicación">
+                            <field name="nozzle_temp"/>
+                            <field name="nozzle_target"/>
+                            <field name="bed_temp"/>
+                            <field name="bed_target"/>
+                            <field name="reachable"/>
+                            <field name="is_stale"/>
+                            <field name="received_at"/>
+                            <field name="snapshot_at"/>
+                            <field name="bridge_id"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_printer_status" model="ir.actions.act_window">
+        <field name="name">Estado de impresoras</field>
+        <field name="res_model">imago.printer.status</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Events and alerts -->
+    <record id="view_printer_event_tree" model="ir.ui.view">
+        <field name="name">imago.printer.event.tree</field>
+        <field name="model">imago.printer.event</field>
+        <field name="arch" type="xml">
+            <tree string="Eventos de impresoras" create="false" edit="false" delete="false"
+                  decoration-danger="is_alert and alert_open" decoration-muted="is_alert and not alert_open">
+                <field name="date"/>
+                <field name="workcenter_id"/>
+                <field name="event_type"/>
+                <field name="state_from" optional="hide"/>
+                <field name="state_to" optional="show"/>
+                <field name="request_id"/>
+                <field name="job_id" optional="hide"/>
+                <field name="details"/>
+                <field name="is_alert"/>
+                <field name="alert_open"/>
+                <field name="date_closed" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_printer_event_search" model="ir.ui.view">
+        <field name="name">imago.printer.event.search</field>
+        <field name="model">imago.printer.event</field>
+        <field name="arch" type="xml">
+            <search string="Eventos de impresoras">
+                <field name="workcenter_id"/>
+                <field name="request_id"/>
+                <filter name="alerts_open" string="Alertas abiertas" domain="[('alert_open', '=', True)]"/>
+                <filter name="alerts" string="Alertas" domain="[('is_alert', '=', True)]"/>
+                <separator/>
+                <filter name="last_7_days" string="Últimos 7 días"
+                        domain="[('date', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_printer" string="Impresora" context="{'group_by': 'workcenter_id'}"/>
+                    <filter name="group_type" string="Evento" context="{'group_by': 'event_type'}"/>
+                    <filter name="group_day" string="Día" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_printer_event" model="ir.actions.act_window">
+        <field name="name">Eventos de impresoras</field>
+        <field name="res_model">imago.printer.event</field>
+        <field name="view_mode">tree</field>
+        <field name="search_view_id" ref="view_printer_event_search"/>
+        <field name="context">{'search_default_last_7_days': 1}</field>
+    </record>
+</odoo>

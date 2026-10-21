@@ -2,7 +2,7 @@
 
 Módulo de Odoo 14 Community para Imago Aerospace. Gestiona las **solicitudes de impresión 3D** de ingeniería, las **4 impresoras** (como centros de trabajo de MRP) y el **inventario de filamento por carrete** (un lote = un carrete), con consumo real en gramos, incluidos los intentos fallidos.
 
-- Versión: `14.0.2.1.0` · Licencia LGPL-3 · Depende de `mrp`, `stock`, `mail` (sin Enterprise, sin `purchase`).
+- Versión: `14.0.2.2.0` · Licencia LGPL-3 · Depende de `mrp`, `stock`, `mail` (sin Enterprise, sin `purchase`).
 - Especificación y decisiones técnicas: [`SPEC.md`](SPEC.md) (la sección 14 registra cada punto [VERIFICAR]).
 
 ## Qué hace
@@ -56,7 +56,7 @@ Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-105 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`) y A-31…A-43 de la impresión combinada (`test_combined.py`).
+129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 215 pruebas propias: `python -m pytest bridge/tests -q`.
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test
@@ -78,21 +78,22 @@ docker run --rm --platform linux/amd64 --network imago3dp-net -e HOST=imago3dp-d
 - Tras cambiar archivos estáticos (JS/SCSS/XML de `static/`), reinicia Odoo o abre con `?debug=assets`: en modo normal Odoo cachea el paquete de assets por proceso.
 - Fuera de alcance v0.1: alias de correo, lectura de G-code/3MF, costeo por proyecto, Gantt, mantenimiento, APIs de impresoras (ver `SPEC.md` §13).
 
-## v0.2 en curso
-F1 (dashboard con datos de Odoo) está implementada. Faltan F2 (puente + drivers) y F3 (alertas). `SPEC.md` §16 define la versión `14.0.2.0.0`:
-- **Dashboard del operador** como página inicial: una acción cliente de Odoo con gráficas Apache ECharts.
-- **Puente local** (`bridge/`, Python en Docker): lee las impresoras por IP en la red de la planta y envía el estado a Odoo por JSON-RPC con API key.
-- **Drivers de solo lectura** para la Creality CR-M4 (HTTP puerto 81) y la Flashforge Adventurer 4 (TCP 8899 y cámara MJPEG en el 8080).
-- **Cruce impresora ↔ Odoo** con alertas: impresión no registrada, impresión terminada con intento abierto, error, sin comunicación.
-
-Los hallazgos del reconocimiento de red y los riesgos de seguridad están en §16.2. El sistema visual del dashboard (tokens, tipografía, modo pantalla) está en [`DESIGN.md`](DESIGN.md); el contexto de producto, en [`PRODUCT.md`](PRODUCT.md).
+## Impresoras en vivo (v0.2 F2/F3)
+- **Conexión por impresora:** en el centro de trabajo, pestaña *Conexión*: tipo (Creality WiFi Box / Flashforge), IP privada, puerto, cámara y puente.
+- **Puente local** (`bridge/`, Python sin dependencias, Docker): corre en un equipo de la planta, lee las impresoras solo en modo lectura y envía su estado a Odoo por HTTPS con la API key de un usuario técnico **portal**. Odoo nunca se conecta a la planta. Instrucciones en [`bridge/README.md`](bridge/README.md).
+- **Odoo guarda** el último estado por impresora (*Impresión 3D → Estado en vivo*) y los cambios de estado (*Reportes → Eventos de impresoras*). La telemetría nunca cambia solicitudes, intentos ni stock.
+- **Alertas** (actividad al operador y tarjeta en *Pendientes*): imprime sin intento en Odoo, terminó con el intento abierto, error y sin comunicación con una impresión en curso. Se cierran solas cuando la condición desaparece; un cron revisa cada 5 min. Umbrales en *Ajustes → Impresoras en vivo*.
+- **Dashboard:** cada estación muestra lo que dice la impresora (estado, temperaturas, capa, minutos, archivo, foto de la cámara y antigüedad del dato); el avance es "en vivo" cuando la impresora lo reporta y "estimado por tiempo" si no (las CR-M4 no reportan avance en impresiones desde USB). El resumen indica si el puente está en línea.
+- **Tiempo real de impresión:** al terminar un intento, el operador confirma o corrige los *Minutos reales de impresión* (prellenados con lo que reportó la impresora o con el reloj); la hora de fin se calcula sola y también se puede editar. La ocupación de la impresora usa ese valor.
+- Configuración: crear el usuario técnico portal con el grupo *Puente de impresoras (técnico)*, crear el puente en *Configuración → Puentes de impresoras*, pulsar **Generar API key** (administrador de accesos) y ligar las impresoras. Detalle en `SPEC.md` §16.12; hallazgos y decisiones en §16.2 y §14 (40–46).
 
 ## Estructura
 ```
 models/    filament_material, print_purpose, print_request, print_job, print_batch, print_consumption,
            product_template, stock_production_lot, stock_move, stock_picking,
            mrp_workcenter, mrp_production, mrp_workorder, res_company, res_config_settings,
-           print_dashboard (+ print_dashboard_charts)
+           print_dashboard (+ print_dashboard_charts), mrp_workcenter_link,
+           printer_bridge, printer_telemetry, printer_status, printer_event
 wizards/   request_message, job_start, job_finish, batch_finish, workorder_filament,
            spool_receive, spool_weigh, spool_mount (+ vistas)
 views/     solicitudes, intentos, consumo, filamento/carretes, impresoras, WO, recepción, ajustes,
@@ -100,5 +101,7 @@ views/     solicitudes, intentos, consumo, filamento/carretes, impresoras, WO, r
 static/    src/js (dashboard + gráficas), src/xml (plantillas QWeb), src/scss, lib/echarts (5.5.1, Apache-2.0)
 security/  grupos, reglas de registro, ACL
 data/      secuencias, materiales, propósitos, producto genérico, tipos de actividad
-tests/     common, test_request_flow, test_consumption, test_spools, test_security, test_dashboard, test_combined
+tests/     common, test_request_flow, test_consumption, test_spools, test_security, test_dashboard, test_combined,
+           test_telemetry
+bridge/    puente local (imago_bridge: config, odoo_client, drivers creality_box / flashforge_tcp, camera; tests)
 ```

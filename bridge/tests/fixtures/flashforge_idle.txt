@@ -1,0 +1,15 @@
+CMD M119 Received.
+Endstop: X-max:0 Y-max:0 Z-max:0
+MachineStatus: READY
+MoveMode: READY
+Status: S:0 L:0 J:0 F:0
+LED: 0
+CurrentFile: 
+ok
+CMD M105 Received.
+T0:21/0 B:5/0
+ok
+CMD M27 Received.
+SD printing byte 0/100
+Layer: 0/0
+ok

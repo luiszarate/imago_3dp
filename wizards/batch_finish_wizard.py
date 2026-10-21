@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
 from odoo import api, fields, models
 
 from ..models.print_job import FAILURE_REASONS, RESULTS_REQUIRING_REASON
@@ -21,6 +23,13 @@ class BatchFinishWizard(models.TransientModel):
     failure_note = fields.Text(string='Detalle de la falla')
     labor_minutes = fields.Integer(string='Mano de obra (min)',
                                    help='Total de la placa; se reparte entre las solicitudes.')
+    print_minutes = fields.Integer(
+        string='Minutos reales de impresión',
+        help='Se prellenan con lo que reportó la impresora (o con el tiempo desde el inicio). Corrígelos si la '
+             'impresión terminó antes de cerrar el intento: la ocupación de la impresora usa este valor.')
+    print_date_start = fields.Datetime(string='Inicio de impresión', compute='_compute_print_date_start')
+    print_date_end = fields.Datetime(string='Fin real de impresión',
+                                     help='Se calcula con los minutos; si la cambias, se recalculan los minutos.')
     lot_line_ids = fields.One2many('imago.print.batch.finish.wizard.lot', 'wizard_id',
                                    string='Consumo por carrete (total de la placa)')
     request_line_ids = fields.One2many('imago.print.batch.finish.wizard.request', 'wizard_id',
@@ -34,6 +43,7 @@ class BatchFinishWizard(models.TransientModel):
         if not batch:
             return res
         jobs = batch.job_ids.sorted('id')
+        res['print_minutes'] = batch.lead_job_id._default_print_minutes()
         lots = jobs.mapped('consumption_ids.lot_id')
         est_total = sum(jobs.mapped('est_grams'))
         res['lot_line_ids'] = [
@@ -51,6 +61,22 @@ class BatchFinishWizard(models.TransientModel):
     def _compute_share_total(self):
         for wizard in self:
             wizard.share_total = sum(wizard.request_line_ids.mapped('share_pct'))
+
+    @api.depends('batch_id')
+    def _compute_print_date_start(self):
+        for wizard in self:
+            wizard.print_date_start = wizard.batch_id.lead_job_id.date_start
+
+    @api.onchange('print_minutes', 'batch_id')
+    def _onchange_print_minutes(self):
+        start = self.batch_id.lead_job_id.date_start
+        self.print_date_end = start + timedelta(minutes=self.print_minutes) if start and self.print_minutes else False
+
+    @api.onchange('print_date_end')
+    def _onchange_print_date_end(self):
+        start, end = self.batch_id.lead_job_id.date_start, self.print_date_end
+        if start and end and end > start:
+            self.print_minutes = max(round((end - start).total_seconds() / 60.0), 1)
 
     @api.onchange('plate_result')
     def _onchange_plate_result(self):
@@ -78,7 +104,8 @@ class BatchFinishWizard(models.TransientModel):
             'failure_note': line.failure_note,
             'share': line.share_pct / scale,
         } for line in self.request_line_ids]
-        self.batch_id._finish_combined(lot_lines, request_lines, labor_minutes=self.labor_minutes)
+        self.batch_id._finish_combined(lot_lines, request_lines, labor_minutes=self.labor_minutes,
+                                       print_minutes=self.print_minutes)
         return {'type': 'ir.actions.act_window_close'}
 
 

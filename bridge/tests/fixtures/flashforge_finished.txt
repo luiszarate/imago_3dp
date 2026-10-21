@@ -1,0 +1,17 @@
+# Adventurer 4 fw v2.3.3, end of print (21-Oct-2026 17:18:11). Rebuilt in raw reply format from the
+# parsed capture row: MachineStatus BUILDING_FROM_SD, file, T0:97/0 B:83/0, 100/100, Layer 94/94.
+CMD M119 Received.
+Endstop: X-max:0 Y-max:0 Z-max:0
+MachineStatus: BUILDING_FROM_SD
+MoveMode: MOVING
+Status: S:1 L:0 J:0 F:0
+LED: 1
+CurrentFile: Cabezal de apriete antenas.gx
+ok
+CMD M105 Received.
+T0:97/0 B:83/0
+ok
+CMD M27 Received.
+SD printing byte 100/100
+Layer: 94/94
+ok

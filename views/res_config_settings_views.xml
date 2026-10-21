@@ -44,6 +44,26 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Impresoras en vivo</span>
+                            <div class="text-muted">Cuándo una impresora sin lecturas se muestra "Sin datos" y cuándo se alerta.</div>
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="print3d_telemetry_stale_s" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_telemetry_stale_s"/>
+                                </div>
+                                <div class="row">
+                                    <label for="print3d_offline_alert_min" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_offline_alert_min"/>
+                                </div>
+                                <div class="row">
+                                    <label for="print3d_finished_alert_min" class="col-lg-5 o_light_label"/>
+                                    <field name="print3d_finished_alert_min"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </xpath>
         </field>

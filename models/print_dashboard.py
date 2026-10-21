@@ -18,7 +18,8 @@ ACTIONS_LIMIT = 12
 LATE_ACTIONS_LIMIT = 5
 SEVERITY_ORDER = {'critical': 0, 'warning': 1, 'info': 2}
 # Within a severity: what unblocks a machine or a late piece first.
-KIND_ORDER = ('late', 'filament', 'overdue', 'spool', 'review', 'idle', 'deliver')
+KIND_ORDER = ('printer_error', 'late', 'filament', 'printer_finished_open', 'overdue', 'printer_unregistered',
+              'printer_offline', 'spool', 'review', 'idle', 'deliver')
 SHORT_DATE = '%d/%m'
 
 
@@ -74,6 +75,7 @@ class PrintDashboard(models.AbstractModel):
             'eta': fields.Datetime.to_string(printer.current_eta) if printer.current_eta else False,
             'spool': self._spool_info(spool) if spool else False,
             'batch': self._batch_info(job.batch_id) if job.batch_id else False,
+            'live': self._live_info(printer, now),
             'filament_warning': bool(job and spool and self._plate_grams(job) > spool.spool_remaining_g),
             'recent_jobs': self._recent_jobs(printer),
         }
@@ -92,6 +94,29 @@ class PrintDashboard(models.AbstractModel):
             'title': request.title,
             'requester': request.requester_id.name,
         }
+
+    @api.model
+    def _live_info(self, printer, now):
+        """What the printer itself reports through the bridge (False without a link)."""
+        if printer.printer_driver == 'none':
+            return False
+        status = self.env['imago.printer.status']._for_printer(printer)
+        labels = dict(printer._fields['live_state'].selection)
+        info = {'state': printer.live_state, 'state_label': labels.get(printer.live_state, ''),
+                'status_id': status.id or False, 'received_ago_s': False}
+        if not status:
+            return info
+        info.update({
+            'received_ago_s': int((now - status.received_at).total_seconds()) if status.received_at else False,
+            'progress': status.progress if status.progress_known else None,
+            'nozzle_temp': status.nozzle_temp, 'nozzle_target': status.nozzle_target,
+            'bed_temp': status.bed_temp, 'bed_target': status.bed_target,
+            'layer': status.layer, 'layer_total': status.layer_total,
+            'time_left_min': status.time_left_min, 'job_time_min': status.job_time_min,
+            'file_name': status.file_name or '', 'error_text': status.error_text or '',
+            'snapshot_unique': fields.Datetime.to_string(status.snapshot_at) if status.snapshot_at else False,
+        })
+        return info
 
     @api.model
     def _batch_info(self, batch):
@@ -217,13 +242,20 @@ class PrintDashboard(models.AbstractModel):
                 [('is_spool', '=', True), ('spool_state', '=', 'low')]),
             'jobs_7d': len(jobs),
             'failure_rate_7d': round(failed * 100.0 / len(jobs), 1) if jobs else False,
+            'bridges': self._bridges_kpi(),
         }
+
+    def _bridges_kpi(self):
+        bridges = self.env['imago.printer.bridge'].search([])
+        if not bridges:
+            return False
+        return {'total': len(bridges), 'online': len(bridges.filtered('is_online'))}
 
     # ------------------------------------------------------------------
     # Action strip
     # ------------------------------------------------------------------
     def _actions(self, cards, queue, now):
-        actions = self._queue_actions(queue) + self._station_actions(cards, queue)
+        actions = self._queue_actions(queue) + self._station_actions(cards, queue) + self._printer_alert_actions()
         actions.sort(key=lambda action: (SEVERITY_ORDER[action['severity']], KIND_ORDER.index(action['kind'])))
         return actions[:ACTIONS_LIMIT]
 
@@ -265,12 +297,31 @@ class PrintDashboard(models.AbstractModel):
                                             open_ref=self._request_open(row)))
         return actions
 
+    def _printer_alert_actions(self):
+        alerts = self.env['imago.printer.event'].search([('alert_open', '=', True)], order='date desc')
+        severity = {'error': 'critical', 'unregistered': 'warning', 'finished_open': 'warning', 'offline': 'warning'}
+        labels = dict(alerts._fields['event_type'].selection)
+        actions = []
+        for alert in alerts:
+            button = False
+            if alert.event_type == 'finished_open' and alert.request_id:
+                button = self._button(_('Terminar intento'), 'imago.print.request', 'action_open_finish_wizard',
+                                      alert.request_id.id)
+            actions.append(self._action(
+                'printer_%s' % alert.event_type, severity[alert.event_type],
+                '%s: %s' % (alert.workcenter_id.name, labels[alert.event_type]), alert._alert_text(),
+                button, {'model': 'imago.printer.status', 'id': alert.status_id.id} if alert.status_id else False))
+        return actions
+
     def _station_actions(self, cards, queue):
         actions = []
         for card in cards:
             job, spool = card['job'], card['spool']
             mount = self._button(_('Montar carrete'), 'mrp.workcenter', 'action_open_mount_wizard', card['id'])
-            if job and job['overdue'] and card['request']:
+            live = card['live']
+            telemetry = live and live['state'] not in ('no_link', 'stale')
+            # With live data the printer itself says when it finished (finished_open alert).
+            if job and job['overdue'] and card['request'] and not telemetry:
                 actions.append(self._action(
                     'overdue', 'warning', _('%s: ¿ya terminó?') % card['name'],
                     _('%(job)s superó su estimado de %(min)s min') % {'job': job['name'], 'min': job['est_minutes']},

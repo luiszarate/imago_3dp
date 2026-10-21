@@ -1,0 +1,15 @@
+CMD M119 Received.
+Endstop: X-max:0 Y-max:0 Z-max:0
+MachineStatus: BUILDING_FROM_SD
+MoveMode: MOVING
+Status: S:1 L:0 J:0 F:0
+LED: 1
+CurrentFile: Cabezal de apriete antenas.gx
+ok
+CMD M105 Received.
+T0:240/240 B:105/105
+ok
+CMD M27 Received.
+SD printing byte 56/100
+Layer: 48/94
+ok

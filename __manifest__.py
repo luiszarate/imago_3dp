@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Imago – Impresión 3D',
-    'version': '14.0.2.1.0',
+    'version': '14.0.2.2.0',
     'summary': 'Solicitudes de impresión 3D, impresoras y carretes de filamento',
     'author': 'Imago Aerospace',
     'license': 'LGPL-3',
@@ -15,6 +15,7 @@
         'data/print_purpose_data.xml',
         'data/product_data.xml',
         'data/mail_activity_data.xml',
+        'data/ir_cron_data.xml',
         'wizards/request_message_wizard_views.xml',
         'wizards/job_start_wizard_views.xml',
         'wizards/job_finish_wizard_views.xml',
@@ -26,6 +27,7 @@
         'views/print_request_views.xml',
         'views/print_job_views.xml',
         'views/print_batch_views.xml',
+        'views/printer_link_views.xml',
         'views/print_consumption_views.xml',
         'views/filament_views.xml',
         'views/mrp_workcenter_views.xml',

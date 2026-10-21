@@ -265,14 +265,50 @@ var PrintDashboard = AbstractAction.extend({
         }
         if (card.job) {
             view.job_g = Math.round(card.job.est_grams);
-            view.progress_label = Math.round(card.job.progress_est);
+            var live = card.live && card.live.state === 'printing' && card.live.progress !== null &&
+                card.live.progress !== undefined;
+            view.progress_label = Math.round(live ? card.live.progress : card.job.progress_est);
+            view.progress_source = live ? _t('en vivo') : _t('estimado por tiempo');
         }
+        _.extend(view, this._liveView(card));
         if (card.spool) {
             view.spool_g = Math.round(card.spool.remaining_g).toLocaleString('es-MX');
             view.spool_pct = Math.max(0, Math.min(100, Math.round(card.spool.remaining_pct)));
             view.spool_warn = card.filament_warning || _.contains(['low', 'empty'], card.spool.state);
         }
         return view;
+    },
+    _liveView: function (card) {
+        var live = card.live;
+        if (!live) {
+            return {live_metrics: []};
+        }
+        var temp = function (label, current, target) {
+            if (!current && !target) {
+                return null;
+            }
+            return target ? _.str.sprintf('%s %s/%s °C', label, Math.round(current), Math.round(target)) :
+                _.str.sprintf('%s %s °C', label, Math.round(current));
+        };
+        var metrics = _.compact([
+            temp(_t('Boquilla'), live.nozzle_temp, live.nozzle_target),
+            temp(_t('Cama'), live.bed_temp, live.bed_target),
+            live.layer_total ? _.str.sprintf(_t('Capa %s/%s'), live.layer, live.layer_total) : null,
+            live.job_time_min ? _.str.sprintf(_t('%s min imprimiendo'), live.job_time_min) : null,
+            live.time_left_min ? _.str.sprintf(_t('faltan %s min'), live.time_left_min) : null,
+        ]);
+        var age = live.received_ago_s;
+        return {
+            live_metrics: live.state === 'stale' || live.state === 'no_link' ? [] : metrics,
+            live_age: age === false || age === undefined ? '' : (age < 90 ?
+                _.str.sprintf(_t('hace %s s'), age) : _.str.sprintf(_t('hace %s min'), Math.round(age / 60))),
+            live_icon: {printing: 'fa-cog', error: 'fa-exclamation-circle', offline: 'fa-plug',
+                stale: 'fa-question-circle', no_link: 'fa-chain-broken', paused: 'fa-pause',
+                finished: 'fa-check'}[live.state] || 'fa-wifi',
+            snapshot_url: live.status_id && live.snapshot_unique && live.state !== 'stale' ?
+                '/web/image/imago.printer.status/' + live.status_id + '/snapshot?unique=' +
+                encodeURIComponent(live.snapshot_unique) : false,
+        };
     },
     _formatTime: function (utcString) {
         var value = moment.utc(utcString).local();
