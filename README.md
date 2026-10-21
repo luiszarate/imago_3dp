@@ -18,7 +18,7 @@ Flujo de estados: `Borrador → Enviada → (Aclarar) → En cola → Imprimiend
 ### Impresión combinada (varias solicitudes en una placa)
 - En **Iniciar impresión**, el campo *Imprimir junto con* agrega otras solicitudes en cola que van en la misma placa. Se crea una **impresión combinada** (`PRB-2026-0001`) con un intento por solicitud y **una sola** WO `[MCH]` (la ocupación de la impresora no se duplica).
 - **Terminar intento** abre un asistente único: gramos por carrete de toda la placa, resultado y piezas por solicitud y el **reparto** (por defecto proporcional a los gramos estimados, editable; debe sumar 100 %). Gramos, minutos de máquina y mano de obra se reparten con esa proporción y cada consumo va a la MO de su solicitud.
-- Los indicadores por impresora cuentan la placa una vez; los de solicitud y propósito usan la parte de cada una. Mientras la placa está en curso no se puede cancelar ni terminar una de sus solicitudes por separado.
+- Los indicadores por impresora cuentan la placa una vez, con su **peor resultado** (una pieza fallida cuenta como falla de la impresora); los de solicitud y propósito usan la parte de cada una. El tiempo de máquina queda en la MO de la solicitud líder; la parte de cada solicitud está en *Minutos asignados*. Mientras la placa está en curso no se puede cancelar ni terminar una de sus solicitudes por separado.
 - Consulta: *Reportes → Impresiones combinadas*. Detalle en `SPEC.md` §17.
 
 ### Integración con MRP / Inventario
@@ -56,7 +56,7 @@ Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-97 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`) y A-31…A-43 de la impresión combinada (`test_combined.py`).
+105 pruebas automáticas en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`) y A-31…A-43 de la impresión combinada (`test_combined.py`).
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test

@@ -15,18 +15,20 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 - Nunca trabajar contra la base productiva. La validación funcional se hará en `manuf_test`.
 
 ## Estado
-- v0.1 (14.0.1.0.0) **implementada**: modelos, asistentes, vistas, seguridad, datos y 66 pruebas.
-- Pruebas: 66/66 OK en Odoo 14 CE (base sin demo y base nueva con demo). Desinstalación limpia verificada.
+- v0.1 (14.0.1.0.0) **implementada** (66 pruebas propias; desinstalación limpia verificada).
+- Pruebas actuales: **105/105 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada).
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
 - v0.2 (14.0.2.0.0) especificada en `SPEC.md` §16. **F1 implementada**: dashboard del operador (`imago.print.dashboard`, acción cliente `imago_3dp_dashboard`, ECharts 5.5.1 local). 80/80 pruebas OK y actualización desde 14.0.1.0.0 verificada (A-30). Pendientes: F2 (puente `bridge/` + drivers; antes resolver V-02/V-03 con una impresión real) y F3 (alertas).
-- Impresión combinada (REQ-3DP-113, 14.0.2.1.0) **implementada** (`SPEC.md` §17; decisiones 33–38): 97/97 pruebas OK y actualización desde 14.0.2.0.0 verificada.
+- Impresión combinada (REQ-3DP-113, 14.0.2.1.0) **implementada** (`SPEC.md` §17; decisiones 33–39, incluida la revisión de código) y actualización desde 14.0.2.0.0 verificada.
 - Diseño: `PRODUCT.md`, `DESIGN.md` (+ `.impeccable/design.json`) y el brief/contrato de superficie en `.impeccable/surfaces/` (Impeccable). Estructura: franja de acciones sobre las estaciones, con Modo pantalla. Revisión final de diseño: *ship*. Cambios visuales al dashboard deben respetar los tokens y reglas de `DESIGN.md`.
 
 ## Impresión combinada (no romper)
 - Una sola WO `[MCH]` por placa, en la MO de la solicitud líder; los demás intentos no tienen WO y sus consumos se ligan a la MO de su propia solicitud (`consumption.workorder_id` vacío).
 - `job._finish` rechaza intentos de una combinada; solo `imago.print.batch._finish_combined` los cierra (parámetro privado `from_batch`, nunca contexto).
-- Reparto: `job.share` (suma 1); gramos con la precisión de la UdM y el último intento con parte absorbe el redondeo; mano de obra en minutos enteros igual.
-- Indicadores de impresora filtran `counts_for_printer`; los de solicitud usan `allocated_minutes` y los consumos propios.
+- `job.batch_id`/`share` y los campos de `imago.print.batch` solo se escriben como superusuario desde `_start_combined`/`_finish_combined` (tras `_check_operator`); el operador tiene ACL de solo lectura sobre la combinada (`_mail_post_access = 'read'`).
+- Reparto por **mayor resto** (`_allocate`): nunca negativo y suma exacta; una parte que redondea a 0 g se rechaza antes de cerrar nada.
+- Indicadores de impresora: `counts_for_printer` + `printer_result` (peor resultado de la placa).
+- Los indicadores de solicitud usan `allocated_minutes` y los consumos propios.
 
 ## Reglas de diseño v0.2 (no romper al implementar)
 - Dashboard: los botones llaman por `/web/dataset/call_button` (con `_rpc` model/method la acción vuelve sin `views`). Plantillas QWeb clásicas: cálculos (`Math.*`) en el view model de JS, no en la plantilla. Modo pantalla debe limpiar las clases de `body`/`html` al salir de la acción.

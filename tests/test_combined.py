@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
+from odoo import fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tests.common import Form
@@ -217,13 +220,16 @@ class TestCombinedPrint(Imago3dpCommon):
         req_a = self._queued('Soporte A', 60.0)
         req_b = self._queued('Soporte B', 40.0)
         batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+        batch.job_ids.write({'date_start': fields.Datetime.now() - timedelta(minutes=50)})
         self._finish_combined(batch, 'ok', [(self.lot_abs_1, 100.0)])
 
         logs = self.env['mrp.workcenter.productivity'].search([('workcenter_id', '=', self.printer1.id)])
         self.assertEqual(len(logs), 1)
         job_a, job_b = self._job(req_a), self._job(req_b)
+        self.assertGreater(job_a.duration_minutes, 49.0)
         self.assertAlmostEqual(job_a.allocated_minutes, job_a.duration_minutes * 0.6)
         self.assertAlmostEqual(req_b.print_minutes_total, job_b.duration_minutes * 0.4)
+        self.assertAlmostEqual(req_a.print_minutes_total + req_b.print_minutes_total, job_a.duration_minutes)
 
     def test_a38_printer_indicators_count_plate_once(self):
         req_a = self._queued('Soporte A', 60.0)
@@ -252,8 +258,10 @@ class TestCombinedPrint(Imago3dpCommon):
         labor_b = self._job(req_b).labor_workorder_id
         self.assertEqual(labor_a.production_id, req_a.production_id)
         self.assertEqual(labor_b.production_id, req_b.production_id)
-        self.assertAlmostEqual(sum(labor_a.time_ids.mapped('duration')), 18.0, places=0)
-        self.assertAlmostEqual(sum(labor_b.time_ids.mapped('duration')), 12.0, places=0)
+        self.assertEqual(self._job(req_a).labor_minutes, 18)
+        self.assertEqual(self._job(req_b).labor_minutes, 12)
+        self.assertAlmostEqual(sum(labor_a.time_ids.mapped('duration')), 18.0, places=2)
+        self.assertAlmostEqual(sum(labor_b.time_ids.mapped('duration')), 12.0, places=2)
 
     # ------------------------------------------------------------------
     # Guards, security, dashboard
@@ -266,7 +274,11 @@ class TestCombinedPrint(Imago3dpCommon):
         with self.assertRaises(UserError):
             req_b.with_user(self.operator).action_cancel()
         with self.assertRaises(UserError):
+            req_a.with_user(self.operator).action_cancel()
+        with self.assertRaises(UserError):
             req_b.with_user(self.operator).action_reject()
+        with self.assertRaises(UserError):
+            req_b.with_user(self.operator).action_request_info()
         with self.assertRaises(UserError):
             self._finish(req_b, 'ok', [(self.lot_abs_1, 40.0)])
 
@@ -284,6 +296,10 @@ class TestCombinedPrint(Imago3dpCommon):
         self.assertEqual(batch.with_user(self.requester).name, batch.name)
         with self.assertRaises(AccessError):
             batch.with_user(self.requester).write({'est_minutes': 1})
+        with self.assertRaises(AccessError):
+            req_a.with_user(self.requester).action_open_finish_wizard()
+        with self.assertRaises(AccessError):
+            batch.with_user(self.requester)._finish_combined([(self.lot_abs_1, 100.0)], [])
 
     def test_a42_dashboard_shows_combined_print(self):
         req_a = self._queued('Soporte A', 60.0)
@@ -299,6 +315,10 @@ class TestCombinedPrint(Imago3dpCommon):
         overdue = [a for a in data['actions'] if a['kind'] == 'overdue']
         self.assertEqual(len(overdue), 1)
         self.assertEqual(overdue[0]['button']['id'], req_a.id)
+        for request in (req_a, req_b):
+            action = request.with_user(self.operator).action_open_finish_wizard()
+            self.assertEqual(action['res_model'], 'imago.print.batch.finish.wizard')
+            self.assertEqual(action['context']['default_batch_id'], batch.id)
 
     def test_a43_single_attempts_keep_full_share(self):
         request = self._queued('Individual', 80.0)
@@ -308,3 +328,121 @@ class TestCombinedPrint(Imago3dpCommon):
         self.assertTrue(job.counts_for_printer)
         self._finish(request, 'ok', [(self.lot_abs_1, 80.0)])
         self.assertAlmostEqual(job.allocated_minutes, job.duration_minutes)
+
+    # ------------------------------------------------------------------
+    # Review hardening
+    # ------------------------------------------------------------------
+    def test_operator_cannot_bypass_batch_by_direct_write(self):
+        req_a = self._queued('Soporte A', 60.0)
+        req_b = self._queued('Soporte B', 40.0)
+        batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+        job_b = self._job(req_b).with_user(self.operator)
+        with self.assertRaises(AccessError):
+            job_b.write({'batch_id': False})
+        with self.assertRaises(AccessError):
+            job_b.write({'share': 1.0})
+        with self.assertRaises(AccessError):
+            batch.with_user(self.operator).write({'state': 'done'})
+        with self.assertRaises(AccessError):
+            self.env['imago.print.batch'].with_user(self.manager).create({'workcenter_id': self.printer1.id})
+        with self.assertRaises(AccessError):
+            batch.with_user(self.manager).write({'state': 'done'})
+        with self.assertRaises(AccessError):
+            self.env['imago.print.job'].with_user(self.operator).create({
+                'request_id': req_a.id, 'workcenter_id': self.printer1.id, 'batch_id': batch.id})
+        self.assertEqual(batch.state, 'running')
+
+    def test_split_never_negative_with_many_requests(self):
+        requests = [self._queued('Pieza %s' % n, 0.0) for n in range(10)]
+        batch = self._start_combined(requests[0], requests[1:], lots=self.lot_abs_1)
+
+        self._finish_combined(batch, 'ok', [(self.lot_abs_1, 10.0)], labor=7)
+
+        labor = [self._job(request).labor_minutes for request in requests]
+        self.assertTrue(all(minutes >= 0 for minutes in labor))
+        self.assertEqual(sum(labor), 7)
+        grams = [self._job(request).grams_total for request in requests]
+        self.assertTrue(all(g > 0 for g in grams))
+        self.assertAlmostEqual(sum(grams), 10.0, places=6)
+
+    def test_share_rounding_to_zero_grams_is_rejected_before_closing(self):
+        req_a = self._queued('Soporte A', 60.0)
+        req_b = self._queued('Soporte B', 40.0)
+        batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+        with self.assertRaises(UserError):
+            self._finish_combined(batch, 'ok', [(self.lot_abs_1, 0.02)], shares={req_a: 99.9, req_b: 0.1})
+        self.assertEqual(batch.state, 'running')
+        self.assertTrue(all(job.result == 'running' for job in batch.job_ids))
+
+    def test_all_cancelled_plate_without_grams(self):
+        req_a = self._queued('Soporte A', 60.0)
+        req_b = self._queued('Soporte B', 40.0)
+        batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+
+        self._finish_combined(batch, 'cancelled', [(self.lot_abs_1, 0.0)])
+
+        self.assertEqual(batch.state, 'done')
+        self.assertEqual(batch.job_ids.mapped('result'), ['cancelled', 'cancelled'])
+        self.assertEqual((req_a | req_b).mapped('state'), ['queued', 'queued'])
+        self.assertAlmostEqual(self._lot_qty(self.lot_abs_1), 1000.0)
+
+    def test_cancelled_line_with_zero_share(self):
+        req_a = self._queued('Soporte A', 60.0)
+        req_b = self._queued('Soporte B', 40.0)
+        batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+
+        self._finish_combined(batch, 'ok', [(self.lot_abs_1, 50.0)],
+                              results={req_b: ('cancelled', 0)}, shares={req_a: 100.0, req_b: 0.0})
+
+        self.assertAlmostEqual(self._job(req_a).grams_total, 50.0)
+        self.assertFalse(self._job(req_b).consumption_ids)
+        self.assertEqual(req_b.state, 'queued')
+
+    def test_post_request_reenters_a_plate(self):
+        req_a = self._queued('Soporte A', 60.0)
+        self._start(req_a, lots=self.lot_abs_1)
+        self._finish(req_a, 'ok', [(self.lot_abs_1, 60.0)])
+        self.assertEqual(req_a.state, 'post')
+        req_b = self._queued('Soporte B', 40.0)
+
+        batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+
+        self.assertEqual(self._job(req_a).pieces_planned, req_a.qty_pieces)
+        self._finish_combined(batch, 'ok', [(self.lot_abs_1, 100.0)])
+        self.assertEqual(req_a.state, 'post')
+
+    def test_printer_indicators_use_worst_result_of_plate(self):
+        req_a = self._queued('Soporte A', 60.0)
+        req_b = self._queued('Soporte B', 40.0)
+        batch = self._start_combined(req_a, [req_b], lots=self.lot_abs_1)
+
+        self._finish_combined(batch, 'ok', [(self.lot_abs_1, 70.0), (self.lot_abs_2, 30.0)],
+                              results={req_b: ('failed', 0)}, reason='clog')
+
+        lead = batch.lead_job_id
+        self.assertEqual(lead.result, 'ok')
+        self.assertEqual(lead.printer_result, 'failed')
+        self.assertEqual(lead.printer_failure_reason, 'clog')
+        self.assertEqual(lead.failure_count, 1)
+        data = self.env['imago.print.dashboard'].with_user(self.operator).get_dashboard_data()
+        self.assertEqual(data['kpis']['failure_rate_7d'], 100.0)
+        self.assertEqual({row['reason']: row['count'] for row in data['charts']['failure_pareto']}, {'clog': 1})
+        by_lot_b = {c.lot_id: c.grams for c in self._job(req_b).consumption_ids}
+        self.assertAlmostEqual(by_lot_b[self.lot_abs_1], 28.0)
+        self.assertAlmostEqual(by_lot_b[self.lot_abs_2], 12.0)
+        self.assertAlmostEqual(req_b.grams_failed, 40.0)
+
+    def test_wizard_estimated_grams_drive_default_share(self):
+        req_a = self._queued('Soporte A', 60.0)
+        req_b = self._queued('Soporte B', 40.0)
+        wizard_model = self.env['imago.print.job.start.wizard'].with_user(self.operator).with_context(
+            default_request_id=req_a.id)
+        form = Form(wizard_model)
+        form.lot_ids.clear()
+        form.lot_ids.add(self.lot_abs_1)
+        form.extra_request_ids.add(req_b)
+        form.est_grams = 160.0
+        form.est_minutes = 90
+        form.save().action_start()
+        self.assertAlmostEqual(self._job(req_a).share, 0.8)
+        self.assertAlmostEqual(self._job(req_a).est_grams, 160.0)

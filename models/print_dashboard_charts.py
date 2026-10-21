@@ -51,30 +51,31 @@ class PrintDashboardCharts(models.AbstractModel):
         } for printer in printers]
 
     def _chart_failure_pareto(self, now):
+        # Printer view: a combined plate counts once, with its worst result (SPEC 17, D-26).
         groups = self.env['imago.print.job'].read_group([
-            ('result', 'in', ('partial', 'failed')),
-            ('failure_reason', '!=', False),
+            ('printer_result', 'in', ('partial', 'failed')),
+            ('printer_failure_reason', '!=', False),
             ('counts_for_printer', '=', True),
             ('date_end', '>=', now - timedelta(days=CHART_DAYS)),
-        ], ['failure_reason'], ['failure_reason'])
+        ], ['printer_failure_reason'], ['printer_failure_reason'])
         labels = dict(FAILURE_REASONS)
         rows = [{
-            'reason': group['failure_reason'],
-            'label': labels.get(group['failure_reason'], group['failure_reason']),
-            'count': group['failure_reason_count'],
+            'reason': group['printer_failure_reason'],
+            'label': labels.get(group['printer_failure_reason'], group['printer_failure_reason']),
+            'count': group['printer_failure_reason_count'],
         } for group in groups]
         return sorted(rows, key=lambda row: (-row['count'], row['label']))
 
     def _chart_success_by_printer(self, printers, now):
         groups = self.env['imago.print.job'].read_group([
             ('workcenter_id', 'in', printers.ids),
-            ('result', 'in', FINISHED_RESULTS),
+            ('printer_result', 'in', FINISHED_RESULTS),
             ('counts_for_printer', '=', True),
             ('date_end', '>=', now - timedelta(days=CHART_DAYS)),
-        ], ['workcenter_id', 'result'], ['workcenter_id', 'result'], lazy=False)
+        ], ['workcenter_id', 'printer_result'], ['workcenter_id', 'printer_result'], lazy=False)
         counts = defaultdict(int)
         for group in groups:
-            counts[(group['workcenter_id'][0], group['result'])] = group['__count']
+            counts[(group['workcenter_id'][0], group['printer_result'])] = group['__count']
         return [dict(
             {'id': printer.id, 'name': printer.name},
             **{result: counts[(printer.id, result)] for result in FINISHED_RESULTS}

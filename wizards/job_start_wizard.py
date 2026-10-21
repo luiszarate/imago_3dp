@@ -87,7 +87,7 @@ class JobStartWizard(models.TransientModel):
             wizard.allowed_extra_request_ids = candidates.filtered(
                 lambda r: not r.job_ids.filtered(lambda j: j.result == 'running'))
 
-    @api.depends('request_id', 'extra_request_ids', 'pieces_planned')
+    @api.depends('request_id', 'extra_request_ids', 'pieces_planned', 'est_grams')
     def _compute_combined_summary(self):
         Batch = self.env['imago.print.batch']
         for wizard in self:
@@ -95,14 +95,16 @@ class JobStartWizard(models.TransientModel):
             if not wizard.extra_request_ids:
                 wizard.combined_summary = False
                 continue
-            shares = Batch._default_shares(requests)
+            grams = {request: request.est_grams for request in requests}
+            grams[wizard.request_id] = wizard.est_grams
+            shares = Batch._default_shares(requests, grams)
             lines = []
             for request in requests:
                 pieces = wizard.pieces_planned if request == wizard.request_id else (
                     request.pieces_pending or request.qty_pieces)
                 lines.append(_('%(name)s · %(title)s · %(pieces)s pza · %(grams).0f g est. · %(pct).0f %%') % {
                     'name': request.name, 'title': request.title, 'pieces': pieces,
-                    'grams': request.est_grams, 'pct': shares[request] * 100.0})
+                    'grams': grams[request], 'pct': shares[request] * 100.0})
             wizard.combined_summary = '\n'.join(lines)
 
     @api.onchange('workcenter_id')
@@ -134,7 +136,7 @@ class JobStartWizard(models.TransientModel):
         if self.extra_request_ids:
             self.env['imago.print.batch']._start_combined(
                 self.request_id | self.extra_request_ids, self.workcenter_id, self.lot_ids, self.est_minutes,
-                pieces={self.request_id: self.pieces_planned})
+                pieces={self.request_id: self.pieces_planned}, est_grams={self.request_id: self.est_grams})
             return {'type': 'ir.actions.act_window_close'}
         self.request_id._start_job(
             self.workcenter_id, self.lot_ids, self.pieces_planned,

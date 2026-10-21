@@ -129,7 +129,7 @@
         <field name="arch" type="xml">
             <pivot string="Tasa de fallos" sample="1">
                 <field name="workcenter_id" type="row"/>
-                <field name="result" type="col"/>
+                <field name="printer_result" type="col"/>
             </pivot>
         </field>
     </record>

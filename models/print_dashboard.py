@@ -141,9 +141,9 @@ class PrintDashboard(models.AbstractModel):
         return [{
             'id': job.id,
             'name': job.name,
-            'result': job.result,
-            'result_label': results[job.result],
-            'reason_label': reasons.get(job.failure_reason, ''),
+            'result': job.printer_result,
+            'result_label': results[job.printer_result],
+            'reason_label': reasons.get(job.printer_failure_reason, ''),
             'date_end': fields.Datetime.to_string(job.date_end) if job.date_end else False,
         } for job in jobs]
 
@@ -201,11 +201,11 @@ class PrintDashboard(models.AbstractModel):
     def _kpis(self, cards, now):
         Request = self.env['imago.print.request']
         jobs = self.env['imago.print.job'].search([
-            ('result', 'in', FINISHED_RESULTS),
+            ('printer_result', 'in', FINISHED_RESULTS),
             ('counts_for_printer', '=', True),
             ('date_end', '>=', now - timedelta(days=KPI_DAYS)),
         ])
-        failed = len(jobs.filtered(lambda job: job.result == 'failed'))
+        failed = len(jobs.filtered(lambda job: job.printer_result == 'failed'))
         return {
             'printers': len(cards),
             'printing': len([card for card in cards if card['status'] == 'printing']),

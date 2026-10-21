@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import math
+
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 from odoo.tools import float_compare, float_is_zero, float_round, html_escape
@@ -11,6 +13,9 @@ BATCH_STATES = [
 ]
 START_STATES = ('queued', 'post')
 SHARE_TOLERANCE = 0.0001
+# Written only by _start_combined / _finish_combined (as superuser, after their checks).
+PROTECTED_FIELDS = ('name', 'workcenter_id', 'job_ids', 'lead_job_id', 'state', 'date_start', 'date_end',
+                    'est_minutes', 'operator_id', 'company_id')
 
 
 class PrintBatch(models.Model):
@@ -25,6 +30,8 @@ class PrintBatch(models.Model):
     _description = 'Impresión combinada 3D'
     _inherit = ['mail.thread']
     _order = 'date_start desc, id desc'
+    # Operators only read batches (ACL); they still post in the chatter.
+    _mail_post_access = 'read'
 
     name = fields.Char(string='Folio', default=lambda self: _('Nuevo'), readonly=True, copy=False)
     workcenter_id = fields.Many2one(
@@ -49,6 +56,17 @@ class PrintBatch(models.Model):
         for batch in self:
             batch.request_ids = batch.job_ids.sorted('id').mapped('request_id')
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.su:
+            raise AccessError(_('Las impresiones combinadas se crean desde [Iniciar impresión].'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.su and set(vals) & set(PROTECTED_FIELDS):
+            raise AccessError(_('La impresión combinada solo cambia con sus asistentes.'))
+        return super().write(vals)
+
     def unlink(self):
         if self.mapped('job_ids.consumption_ids').filtered('stock_move_id'):
             raise UserError(_('No se puede borrar una impresión combinada con consumo de filamento registrado.'))
@@ -63,20 +81,23 @@ class PrintBatch(models.Model):
             raise AccessError(_('Solo el operador de impresión 3D puede realizar esta acción.'))
 
     @api.model
-    def _start_combined(self, requests, workcenter, lots, est_minutes, pieces=None):
+    def _start_combined(self, requests, workcenter, lots, est_minutes, pieces=None, est_grams=None):
         """Start one plate for ``requests`` (the first one leads and owns the [MCH] WO).
 
         :param pieces: optional {request: pieces planned}; default the pending pieces.
+        :param est_grams: optional {request: estimated grams}; default the request estimate.
         """
         self._check_operator()
         self._check_combinable(requests, est_minutes)
         pieces = pieces or {}
+        est_grams = est_grams or {}
         planned = {r: pieces.get(r) or r.pieces_pending or r.qty_pieces for r in requests}
+        grams = {r: est_grams.get(r, r.est_grams) for r in requests}
         for request in requests:
             request._check_start_conditions(workcenter, lots, planned[request])
-        shares = self._default_shares(requests)
+        shares = self._default_shares(requests, grams)
         lead = requests[0]
-        batch = self.create({
+        batch = self.sudo().create({
             'name': self.env['ir.sequence'].sudo().next_by_code('imago.print.batch') or _('Nuevo'),
             'workcenter_id': workcenter.id,
             'date_start': fields.Datetime.now(),
@@ -93,8 +114,9 @@ class PrintBatch(models.Model):
             jobs |= request._create_job(
                 workcenter, lots, planned[request], request._next_attempt_no(),
                 workorder if request == lead else self.env['mrp.workorder'],
-                est_grams=request.est_grams, est_minutes=est_minutes, batch=batch, share=shares[request])
+                est_grams=grams[request], est_minutes=est_minutes, batch=batch, share=shares[request])
         batch.lead_job_id = jobs[0]
+        batch = batch.with_env(self.env)
         for request, job in zip(requests, jobs):
             request._after_job_started(job, workcenter, lots, batch=batch)
         batch.message_post(body=_('Impresión combinada iniciada en %(printer)s: %(requests)s.',
@@ -116,9 +138,10 @@ class PrintBatch(models.Model):
             raise UserError(_('Indica los minutos estimados de la placa completa.'))
 
     @api.model
-    def _default_shares(self, requests):
+    def _default_shares(self, requests, grams=None):
         """Proportional to the estimated grams; equal parts if any request has no estimate (D-23)."""
-        weights = [request.est_grams for request in requests]
+        grams = grams or {}
+        weights = [grams.get(request, request.est_grams) for request in requests]
         if any(weight <= 0 for weight in weights):
             weights = [1.0] * len(requests)
         total = sum(weights)
@@ -157,15 +180,16 @@ class PrintBatch(models.Model):
         jobs = [line['job'] for line in request_lines]
         shares = [line['share'] for line in request_lines]
         allocation = self._split_grams(grams_by_lot, jobs, shares)
+        self._check_allocation(request_lines, allocation, grams_by_lot)
         labor = self._split_minutes(labor_minutes, jobs, shares)
         for line in request_lines:
             job = line['job']
-            job.write({'share': line['share']})
+            job.sudo().write({'share': line['share']})
             job._finish(
                 line['result'], line['pieces_ok'], allocation[job],
                 failure_reason=line.get('failure_reason'), failure_note=line.get('failure_note'),
                 labor_minutes=labor[job], from_batch=True)
-        self.write({'state': 'done', 'date_end': fields.Datetime.now()})
+        self.sudo().write({'state': 'done', 'date_end': fields.Datetime.now()})
         self.message_post(body=_('Impresión combinada terminada.'))
         return True
 
@@ -206,32 +230,46 @@ class PrintBatch(models.Model):
                     lot=lot.name, available=max(available, 0.0), grams=grams))
 
     @api.model
+    def _check_allocation(self, request_lines, allocation, grams_by_lot):
+        """Before closing anything: every request that printed must receive some grams."""
+        if not any(grams > 0 for grams in grams_by_lot.values()):
+            return
+        for line in request_lines:
+            given = sum(grams for _lot, grams in allocation[line['job']])
+            if line['result'] != 'cancelled' and given <= 0:
+                raise UserError(_(
+                    'La parte de %(request)s (%(pct).2f %%) no alcanza ni la unidad mínima de filamento; '
+                    'ajusta el reparto o los gramos.', request=line['job'].request_id.name,
+                    pct=line['share'] * 100.0))
+
+    @api.model
+    def _allocate(self, amount, shares, unit):
+        """Largest-remainder split of ``amount`` in multiples of ``unit``: parts are never
+        negative and add up to ``amount`` (rounded to ``unit``)."""
+        total_units = int(round(amount / unit))
+        raw = [total_units * share for share in shares]
+        parts = [int(math.floor(value)) for value in raw]
+        rest = total_units - sum(parts)
+        order = sorted(range(len(shares)), key=lambda i: (-(raw[i] - parts[i]), -shares[i], i))
+        for index in order[:rest]:
+            parts[index] += 1
+        return [part * unit for part in parts]
+
+    @api.model
     def _split_grams(self, grams_by_lot, jobs, shares):
-        """{job: [(lot, grams)]}; the last job with a share takes the rounding rest (D-24)."""
+        """{job: [(lot, grams)]} with each spool split by the shares (D-24)."""
         allocation = {job: [] for job in jobs}
-        receivers = [index for index, share in enumerate(shares) if share > 0]
         for lot, grams in grams_by_lot.items():
             rounding = lot.product_id.uom_id.rounding
-            if float_is_zero(grams, precision_rounding=rounding) or not receivers:
+            if float_is_zero(grams, precision_rounding=rounding):
                 continue
-            given = 0.0
-            for position, index in enumerate(receivers):
-                if position == len(receivers) - 1:
-                    part = float_round(grams - given, precision_rounding=rounding)
-                else:
-                    part = float_round(grams * shares[index], precision_rounding=rounding)
-                given += part
-                allocation[jobs[index]].append((lot, part))
+            for job, part in zip(jobs, self._allocate(grams, shares, rounding)):
+                part = float_round(part, precision_rounding=rounding)
+                if part > 0:
+                    allocation[job].append((lot, part))
         return allocation
 
     @api.model
     def _split_minutes(self, minutes, jobs, shares):
-        """Whole minutes per job; the last job with a share takes the rest (D-27)."""
-        result = {job: 0 for job in jobs}
-        receivers = [index for index, share in enumerate(shares) if share > 0]
-        given = 0
-        for position, index in enumerate(receivers):
-            part = minutes - given if position == len(receivers) - 1 else int(round(minutes * shares[index]))
-            result[jobs[index]] = part
-            given += part
-        return result
+        """Whole minutes per job (D-27)."""
+        return dict(zip(jobs, [int(part) for part in self._allocate(minutes, shares, 1)]))

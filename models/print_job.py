@@ -2,7 +2,7 @@
 from datetime import timedelta
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 JOB_RESULTS = [
     ('running', 'En curso'),
@@ -24,6 +24,10 @@ FAILURE_REASONS = [
 ]
 
 RESULTS_REQUIRING_REASON = ('partial', 'failed')
+# Worst first: the printer indicators of a combined plate use its worst result.
+RESULT_SEVERITY = ('running', 'failed', 'partial', 'ok', 'cancelled')
+# Set only by imago.print.batch (as superuser, after its own checks).
+BATCH_FIELDS = ('batch_id', 'share')
 
 
 class PrintJob(models.Model):
@@ -68,6 +72,11 @@ class PrintJob(models.Model):
     counts_for_printer = fields.Boolean(
         string='Cuenta para la impresora', compute='_compute_batch_flags', store=True,
         help='Los indicadores por impresora cuentan una impresión combinada una sola vez.')
+    printer_result = fields.Selection(
+        JOB_RESULTS, string='Resultado de la placa', compute='_compute_printer_result', store=True,
+        help='Peor resultado de la impresión combinada (el propio en intentos individuales).')
+    printer_failure_reason = fields.Selection(
+        FAILURE_REASONS, string='Causa de falla de la placa', compute='_compute_printer_result', store=True)
     allocated_minutes = fields.Float(
         string='Minutos asignados', compute='_compute_allocated_minutes', store=True,
         help='Duración por la parte de la placa de esta solicitud.')
@@ -96,15 +105,26 @@ class PrintJob(models.Model):
             job.is_batch_lead = bool(job.batch_id) and job.batch_id.lead_job_id == job
             job.counts_for_printer = not job.batch_id or job.is_batch_lead
 
+    @api.depends('result', 'failure_reason', 'batch_id.job_ids.result', 'batch_id.job_ids.failure_reason')
+    def _compute_printer_result(self):
+        for job in self:
+            source = job
+            if job.batch_id:
+                source = min(job.batch_id.job_ids, key=lambda j: RESULT_SEVERITY.index(j.result))
+            job.printer_result = source.result
+            job.printer_failure_reason = source.failure_reason
+
     @api.depends('duration_minutes', 'share')
     def _compute_allocated_minutes(self):
         for job in self:
             job.allocated_minutes = job.duration_minutes * job.share
 
-    @api.depends('result')
+    @api.depends('result', 'printer_result', 'is_batch_lead')
     def _compute_failure_count(self):
         for job in self:
-            job.failure_count = 1 if job.result == 'failed' else 0
+            # The lead attempt carries the plate for the printer failure rate (SPEC 17, D-26).
+            result = job.printer_result if job.is_batch_lead else job.result
+            job.failure_count = 1 if result == 'failed' else 0
 
     @api.constrains('failure_reason', 'failure_note')
     def _check_failure_note(self):
@@ -115,6 +135,17 @@ class PrintJob(models.Model):
     # ------------------------------------------------------------------
     # Finish
     # ------------------------------------------------------------------
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.su and any(set(vals) & set(BATCH_FIELDS) for vals in vals_list):
+            raise AccessError(_('Los datos de la impresión combinada solo los cambia su asistente.'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.su and set(vals) & set(BATCH_FIELDS):
+            raise AccessError(_('Los datos de la impresión combinada solo los cambia su asistente.'))
+        return super().write(vals)
+
     def unlink(self):
         if self.mapped('consumption_ids').filtered('stock_move_id'):
             raise UserError(_('No se puede borrar un intento con consumo de filamento registrado.'))

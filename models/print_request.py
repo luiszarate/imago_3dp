@@ -450,7 +450,7 @@ class PrintRequest(models.Model):
         """Running attempt with a 0 g consumption line per spool (grams are captured at the end).
         Attempts of a combined print other than the lead one have no work order (SPEC 17, D-22)."""
         self.ensure_one()
-        return self.env['imago.print.job'].create({
+        job = self.env['imago.print.job'].create({
             'request_id': self.id,
             'attempt_no': attempt_no,
             'workcenter_id': workcenter.id,
@@ -461,12 +461,14 @@ class PrintRequest(models.Model):
             'est_minutes': est_minutes,
             'date_start': fields.Datetime.now(),
             'result': 'running',
-            'batch_id': batch.id if batch else False,
-            'share': share,
             'consumption_ids': [
                 (0, 0, {'lot_id': lot.id, 'grams': 0.0, 'workorder_id': workorder.id}) for lot in lots
             ],
         })
+        if batch:
+            # Batch fields are protected against direct writes (RPC); the batch already checked the operator.
+            job.sudo().write({'batch_id': batch.id, 'share': share})
+        return job
 
     def _after_job_started(self, job, workcenter, lots, batch=False):
         self.ensure_one()
