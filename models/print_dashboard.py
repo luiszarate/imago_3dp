@@ -11,7 +11,7 @@ from .print_request import OPERATOR_GROUP
 QUEUE_STATES = ('submitted', 'queued', 'post')
 QUEUE_LIMIT = 30
 FINISHED_RESULTS = ('ok', 'partial', 'failed')
-RECENT_JOBS = 3
+RECENT_JOBS = 1
 KPI_DAYS = 7
 PROGRESS_EST_CAP = 99.0
 ACTIONS_LIMIT = 12

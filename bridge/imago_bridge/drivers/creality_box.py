@@ -61,10 +61,17 @@ def _flag(fields: Mapping[str, Any], key: str) -> Optional[int]:
     return int(number)
 
 
+STATE_CANCELLED = 4
+
+
 def map_state(fields: Mapping[str, Any]) -> str:
     """Box/printer flags to the common state (observed 21-Oct-2026, see SPEC V-02)."""
     if _flag(fields, "connect") == 0:
         return "offline"
+    if _flag(fields, "state") == STATE_CANCELLED:
+        # A print stopped on the printer reports state 4 with err 1 (confirmed by the
+        # operator, 21-Oct-2026): the printer is idle again, not faulty.
+        return "idle"
     if _error_code(fields):
         return "error"
     if _flag(fields, "pause") == 1:

@@ -88,6 +88,14 @@ def test_state_rules(changes, state):
     assert parse(row).state == state
 
 
+def test_cancelled_print_is_idle_not_error():
+    """state 4 + err 1 after stopping a print on the CR-M4 (live, 21-Oct-2026)."""
+    status = parse(load_json("creality_cancelled.json"))
+    assert status.state == "idle"
+    assert status.error_text is None
+    assert status.job_time_min == 27
+
+
 def test_error_text_carries_code():
     status = parse(dict(load_json("creality_idle.json"), err=3))
     assert status.error_text == "Error de impresora (código 3)"

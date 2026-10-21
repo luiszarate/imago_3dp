@@ -32,7 +32,7 @@ Flujo de estados: `Borrador → Enviada → (Aclarar) → En cola → Imprimiend
 Primer elemento del menú para Operador y Responsable; se puede fijar como *Acción inicial* del usuario.
 - **Línea de resumen:** imprimiendo n/N, en cola, por revisar, en post-proceso, atrasadas y fallos de 7 días.
 - **Pendientes:** franja de tarjetas ordenada por severidad, cada una con su botón (Iniciar, Terminar intento, Montar carrete, Abrir). Cubre atrasadas, por revisar, post-proceso, intentos que superaron su estimado, filamento insuficiente, carretes casi vacíos e impresoras libres con trabajo en cola.
-- **Estaciones:** una tarjeta por impresora con su estado, la solicitud en curso, el avance **estimado por tiempo** con la hora de fin, el carrete montado y los sellos de sus últimos 3 intentos.
+- **Estaciones:** una tarjeta por impresora con su estado, la solicitud en curso, el avance **estimado por tiempo** con la hora de fin, el carrete montado y el sello de su último intento (resultado y causa).
 - **Cola de trabajos** (por revisar, en cola, post-proceso), **Carretes** (resumen por filamento + montados y casi vacíos) y **Tendencias** (ECharts, en pestañas): ocupación 7 d, resultados 30 d, causas de falla y consumo por propósito en 8 semanas.
 - **Modo pantalla** para la pantalla mural: oculta el menú de Odoo y los botones, agranda el texto y destaca la siguiente acción.
 - Se actualiza cada 15 s (las gráficas, cada minuto) y se pausa con la pestaña oculta. La lectura en vivo de las impresoras llega en la fase F2.
@@ -56,7 +56,7 @@ Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 215 pruebas propias: `python -m pytest bridge/tests -q`.
+129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 216 pruebas propias: `python -m pytest bridge/tests -q`.
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test

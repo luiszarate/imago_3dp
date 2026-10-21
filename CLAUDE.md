@@ -16,7 +16,7 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 
 ## Estado
 - v0.1 (14.0.1.0.0) **implementada** (66 pruebas propias; desinstalación limpia verificada).
-- Pruebas actuales: **129/129 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada + telemetría) y **215** del puente (`bridge/tests`, pytest).
+- Pruebas actuales: **129/129 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada + telemetría) y **216** del puente (`bridge/tests`, pytest).
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
 - v0.2 (`SPEC.md` §16) **implementada**: F1 dashboard (14.0.2.0.0), F2 puente + drivers + telemetría y F3 alertas (14.0.2.2.0). Pendiente: confirmar qué significa `state 4` + `err 1` de la CR-M4 tras detener una impresión (decisión 40), V-05 detrás del proxy de producción y V-06 (filestore) en `manuf_test`.
 - Impresión combinada (REQ-3DP-113, 14.0.2.1.0) **implementada** (`SPEC.md` §17; decisiones 33–39, incluida la revisión de código) y actualización desde 14.0.2.0.0 verificada.

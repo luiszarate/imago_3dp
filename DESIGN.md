@@ -292,7 +292,7 @@ Esquinas apenas suavizadas (4 px) en paneles, tarjetas, estaciones y en el carte
 - **Entrada:** una tarjeta nueva entra con 420 ms `cubic-bezier(0.16, 1, 0.3, 1)` desde 0.35 de opacidad y 6 px abajo. Es la única animación de entrada del sistema.
 
 ### Estación
-- **Estructura:** cabeza (nombre + modelo), banda de estado de borde a borde, cuerpo (trabajo, medidor de avance estimado), carrete (medidor delgado, gramos), sellos, acciones al pie.
+- **Estructura:** cabeza (nombre + modelo), banda de estado de borde a borde, cuerpo (trabajo, medidor de avance estimado), carrete (medidor delgado, gramos), el sello del último intento, acciones al pie.
 - **Banda:** Libre en correcto, Imprimiendo en información, Fuera de servicio en inactivo; palabra grande con ícono y "Fin ≈ hh:mm" a la derecha.
 - **Movimiento:** el engrane de Imprimiendo gira lento (6 s, lineal, infinito).
 

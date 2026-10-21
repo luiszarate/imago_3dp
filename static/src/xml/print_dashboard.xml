@@ -200,7 +200,7 @@
                 <span t-else="" class="o_p3d_muted">Sin carrete montado</span>
             </div>
 
-            <ul t-if="printer.recent_jobs.length" class="o_p3d_stamps" aria-label="Últimos intentos">
+            <ul t-if="printer.recent_jobs.length" class="o_p3d_stamps" aria-label="Último intento">
                 <li t-foreach="printer.recent_jobs" t-as="stamp" t-attf-class="o_p3d_stamp o_p3d_stamp_#{stamp.result}"
                     t-att-title="stamp.name">
                     <t t-esc="stamp.result_label"/><span t-if="stamp.reason_label" class="o_p3d_stamp_reason"> · <t t-esc="stamp.reason_label"/></span>
