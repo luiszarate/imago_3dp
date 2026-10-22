@@ -27,14 +27,21 @@ class DeadlineExceeded(socket.timeout):
 class _DeadlineRaw(io.RawIOBase):
     """Raw reader over a socket that never blocks past ``deadline`` (monotonic)."""
 
-    def __init__(self, sock: socket.socket, deadline: float, clock: Callable[[], float]) -> None:
+    def __init__(self, sock: socket.socket, deadline: float, clock: Callable[[], float],
+                 on_close: Callable[[], None] = lambda: None) -> None:
         super().__init__()
         self._sock = sock
         self._deadline = deadline
         self._clock = clock
+        self._on_close = on_close
 
     def readable(self) -> bool:
         return True
+
+    def close(self) -> None:
+        if not self.closed:
+            self._on_close()
+        super().close()
 
     def readinto(self, buffer) -> int:
         remaining = self._deadline - self._clock()
@@ -45,17 +52,37 @@ class _DeadlineRaw(io.RawIOBase):
 
 
 class _DeadlineSocket:
-    """Wraps the connection socket; ``makefile`` returns a deadline-bound reader."""
+    """Wraps the connection socket; ``makefile`` returns a deadline-bound reader.
+
+    Like ``socket.makefile``, the real socket stays open while a reader made from it is
+    open: http.client closes the connection socket right after parsing the headers of a
+    "Connection: close" response and reads the body from the file afterwards. Closing the
+    descriptor at that point failed ~60 % of real CR-M4 reads and every camera read with
+    OSError 9 (Bad file descriptor) whenever the body arrived after the headers.
+    """
 
     def __init__(self, sock: socket.socket, deadline: float, clock: Callable[[], float]) -> None:
         self._sock = sock
         self._deadline = deadline
         self._clock = clock
+        self._readers = 0
+        self._close_requested = False
 
     def makefile(self, mode: str = "rb", *args, **kwargs):
         if "b" not in mode or "r" not in mode:
             raise ValueError("only binary read mode is supported")
-        return io.BufferedReader(_DeadlineRaw(self._sock, self._deadline, self._clock))
+        self._readers += 1
+        return io.BufferedReader(_DeadlineRaw(self._sock, self._deadline, self._clock, self._reader_closed))
+
+    def _reader_closed(self) -> None:
+        self._readers -= 1
+        if self._close_requested and self._readers <= 0:
+            self._sock.close()
+
+    def close(self) -> None:
+        self._close_requested = True
+        if self._readers <= 0:
+            self._sock.close()
 
     def __getattr__(self, name: str):
         return getattr(self._sock, name)

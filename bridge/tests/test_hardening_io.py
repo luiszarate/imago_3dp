@@ -159,3 +159,61 @@ def test_flashforge_read_is_failed_read_on_trickle(monkeypatch, idle_replies):
     driver = flashforge.FlashforgeTcpDriver(printer_config, connect=lambda a, timeout=None: Trickle(idle_replies))
     with pytest.raises(DriverError):
         driver.read()
+
+
+def _serve_late_body(monkeypatch, body, delay=0.3):
+    """Device that sends the headers, pauses, then the body (like the CR-M4 box and the camera)."""
+    client_end, device_end = socket.socketpair()
+
+    def device():
+        device_end.recv(4096)
+        device_end.sendall(b"HTTP/1.0 200 OK\r\nConnection: Keep-Alive\r\nContent-Length: %d\r\n\r\n" % len(body))
+        time.sleep(delay)
+        device_end.sendall(body)
+
+    def fake_create_connection(address, timeout=None, source_address=None, **kwargs):
+        client_end.settimeout(timeout)
+        return _UnixPairEnd(client_end)
+
+    monkeypatch.setattr(socket, "create_connection", fake_create_connection)
+    threading.Thread(target=device, daemon=True).start()
+    return client_end, device_end
+
+
+class _UnixPairEnd:
+    """A socketpair end that ignores TCP-only options (http.client sets TCP_NODELAY)."""
+
+    def __init__(self, sock):
+        self._sock = sock
+
+    def setsockopt(self, *args):
+        return None
+
+    def __getattr__(self, name):
+        return getattr(self._sock, name)
+
+
+def test_body_arriving_after_headers_is_read(monkeypatch):
+    """Regression (21-Oct-2026, live CR-M4): http.client closes the connection socket once the
+    headers are parsed; the deadline reader must keep the descriptor open until the body is read
+    (it failed with OSError 9, Bad file descriptor, in ~60 % of real reads)."""
+    body = b'{"state": 0}' * 100
+    client_end, device_end = _serve_late_body(monkeypatch, body)
+    opener = build_lan_opener(total_seconds=3.0)
+    try:
+        with open_lan_url(opener, "http://192.168.0.248:81/protocal.csp", "192.168.0.248", timeout=3.0) as response:
+            assert read_capped(response, 64 * 1024, 3.0) == body
+    finally:
+        device_end.close()
+        client_end.close()
+
+
+def test_camera_stream_after_headers_is_read(monkeypatch):
+    frame = b"\xff\xd8" + b"x" * 5000 + b"\xff\xd9"
+    body = b"--boundarydonotcross\r\nContent-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
+    client_end, device_end = _serve_late_body(monkeypatch, body)
+    try:
+        assert camera.fetch_snapshot("http://192.168.0.61:8080/?action=stream", "192.168.0.61") == frame
+    finally:
+        device_end.close()
+        client_end.close()

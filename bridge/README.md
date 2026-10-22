@@ -62,7 +62,7 @@ En el equipo de la planta (mini-PC, Raspberry de 64 bits, PC del cuarto de impre
 
 ```bash
 cd bridge
-docker build -t imago-3dp-bridge:0.2.0 .
+docker build -t imago-3dp-bridge:0.2.1 .
 
 # La llave en un archivo legible solo por el usuario del contenedor (uid 10001)
 printf '%s' 'LA_API_KEY' | sudo tee /etc/imago-3dp-bridge.key >/dev/null
@@ -77,7 +77,7 @@ docker run -d --name imago-3dp-bridge --restart unless-stopped \
   -e ODOO_LOGIN=puente-3dp@imago.aero \
   -e ODOO_API_KEY_FILE=/run/secrets/odoo_api_key \
   -v /etc/imago-3dp-bridge.key:/run/secrets/odoo_api_key:ro \
-  imago-3dp-bridge:0.2.0
+  imago-3dp-bridge:0.2.1
 
 docker logs -f imago-3dp-bridge
 ```

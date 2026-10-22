@@ -56,7 +56,7 @@ Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 216 pruebas propias: `python -m pytest bridge/tests -q`.
+129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 218 pruebas propias: `python -m pytest bridge/tests -q`.
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test
