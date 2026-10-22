@@ -56,7 +56,7 @@ Dashboard · Solicitudes (Mis solicitudes · Cola de impresión) · Impresoras (
 > Ajustes solo lo puede guardar un administrador (limitación estándar de `res.config.settings`).
 
 ## Pruebas
-129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 218 pruebas propias: `python -m pytest bridge/tests -q`.
+129 pruebas automáticas de Odoo en `tests/` cubren los criterios A-01…A-18 del SPEC (flujo, consumo, carretes, seguridad), A-19/A-30 del dashboard (`test_dashboard.py`), A-31…A-43 de la impresión combinada (`test_combined.py`) y A-20…A-29 de las impresoras en vivo y alertas (`test_telemetry.py`). El puente tiene 223 pruebas propias: `python -m pytest bridge/tests -q`.
 
 ```bash
 odoo -d test_imago_3dp -i imago_3dp --test-enable --test-tags=/imago_3dp --stop-after-init --log-level=test
@@ -83,9 +83,9 @@ docker run --rm --platform linux/amd64 --network imago3dp-net -e HOST=imago3dp-d
 - **Puente local** (`bridge/`, Python sin dependencias, Docker): corre en un equipo de la planta, lee las impresoras solo en modo lectura y envía su estado a Odoo por HTTPS con la API key de un usuario técnico **portal**. Odoo nunca se conecta a la planta. Instrucciones en [`bridge/README.md`](bridge/README.md).
 - **Odoo guarda** el último estado por impresora (*Impresión 3D → Estado en vivo*) y los cambios de estado (*Reportes → Eventos de impresoras*). La telemetría nunca cambia solicitudes, intentos ni stock.
 - **Alertas** (actividad al operador y tarjeta en *Pendientes*): imprime sin intento en Odoo, terminó con el intento abierto, error y sin comunicación con una impresión en curso. Se cierran solas cuando la condición desaparece; un cron revisa cada 5 min. Umbrales en *Ajustes → Impresoras en vivo*.
-- **Dashboard:** cada estación muestra lo que dice la impresora (estado, temperaturas, capa, minutos, archivo, foto de la cámara y antigüedad del dato); el avance es "en vivo" cuando la impresora lo reporta y "estimado por tiempo" si no (las CR-M4 no reportan avance en impresiones desde USB). El resumen indica si el puente está en línea.
+- **Dashboard:** cada estación muestra lo que dice la impresora (estado, temperaturas, capa, minutos, archivo, foto de la cámara y antigüedad del dato); el avance es "en vivo" cuando la impresora lo reporta y "estimado por tiempo" si no (las CR-M4 reportan el mismo porcentaje entero que Creality Print, también desde USB; una impresión larga marca 0 % hasta llegar al 1 %). El resumen indica si el puente está en línea.
 - **Tiempo real de impresión:** al terminar un intento, el operador confirma o corrige los *Minutos reales de impresión* (prellenados con lo que reportó la impresora o con el reloj); la hora de fin se calcula sola y también se puede editar. La ocupación de la impresora usa ese valor.
-- Configuración: crear el usuario técnico portal con el grupo *Puente de impresoras (técnico)*, crear el puente en *Configuración → Puentes de impresoras*, pulsar **Generar API key** (administrador de accesos) y ligar las impresoras. Detalle en `SPEC.md` §16.12; hallazgos y decisiones en §16.2 y §14 (40–46).
+- Configuración: crear el usuario técnico portal con el grupo *Puente de impresoras (técnico)*, crear el puente en *Configuración → Puentes de impresoras*, pulsar **Generar API key** (administrador de accesos) y ligar las impresoras. Detalle en `SPEC.md` §16.12; hallazgos y decisiones en §16.2 y §14 (40–51).
 
 ## Estructura
 ```

@@ -16,9 +16,9 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 
 ## Estado
 - v0.1 (14.0.1.0.0) **implementada** (66 pruebas propias; desinstalación limpia verificada).
-- Pruebas actuales: **129/129 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada + telemetría) y **218** del puente (`bridge/tests`, pytest).
+- Pruebas actuales: **129/129 OK** en Odoo 14 CE (v0.1 + dashboard + impresión combinada + telemetría) y **223** del puente (`bridge/tests`, pytest).
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
-- v0.2 (`SPEC.md` §16) **implementada**: F1 dashboard (14.0.2.0.0), F2 puente + drivers + telemetría y F3 alertas (14.0.2.2.0). Pendiente: confirmar qué significa `state 4` + `err 1` de la CR-M4 tras detener una impresión (decisión 40), V-05 detrás del proxy de producción y V-06 (filestore) en `manuf_test`.
+- v0.2 (`SPEC.md` §16) **implementada**: F1 dashboard (14.0.2.0.0), F2 puente + drivers + telemetría y F3 alertas (14.0.2.2.0). Pendiente: desplegar el puente 0.2.2 (decisiones 50–51), V-05 detrás del proxy de producción y V-06 (filestore) en `manuf_test`.
 - Impresión combinada (REQ-3DP-113, 14.0.2.1.0) **implementada** (`SPEC.md` §17; decisiones 33–39, incluida la revisión de código) y actualización desde 14.0.2.0.0 verificada.
 - Diseño: `PRODUCT.md`, `DESIGN.md` (+ `.impeccable/design.json`) y el brief/contrato de superficie en `.impeccable/surfaces/` (Impeccable). Estructura: franja de acciones sobre las estaciones (`auto-fit`, foto de cámara junto a la lectura en estaciones anchas), Cola | Carretes a la misma altura y Tendencias a todo el ancho debajo; con Modo pantalla. Revisión final de diseño: *ship*. Cambios visuales al dashboard deben respetar los tokens y reglas de `DESIGN.md`.
 
@@ -38,6 +38,7 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 - Validación del lote: números finitos y acotados, texto sin caracteres de control, foto verificada con Pillow, nunca una excepción que aborte el lote.
 - Tiempo real: mandan los **minutos** capturados (prellenados con la impresora); la hora de fin se deriva y es editable.
 - El puente: solo lectura (Flashforge sin `~M601`), solo IPv4 privadas, `https` obligatorio, `offline` tras 3 lecturas fallidas.
+- CR-M4: el avance es `printProgress` tal cual (el mismo porcentaje entero de Creality Print, también desde USB; 0 % al arrancar una impresión larga). No volver a tratar el 0 como desconocido (decisión 50, confirmada en vivo). `err 1` no es falla: queda puesto tras cancelar y sigue en la impresión siguiente (decisión 51).
 - `lanhttp._DeadlineSocket` no debe cerrar el socket real mientras haya un lector abierto (decisión 49: el cuerpo llega después de los encabezados en la Creality Box y en la cámara).
 
 ## Reglas de diseño v0.2 (no romper al implementar)

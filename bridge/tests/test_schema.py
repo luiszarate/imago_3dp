@@ -36,7 +36,7 @@ def test_push_payload_shape():
     moment = datetime(2026, 10, 21, 10, 0, 0, tzinfo=timezone(timedelta(hours=-6)))
     payload = build_push_payload([offline_status(12), offline_status(13)], moment)
     assert set(payload) == {"bridge_version", "sent_at", "printers"}
-    assert payload["bridge_version"] == __version__ == "0.2.1"
+    assert payload["bridge_version"] == __version__ == "0.2.2"
     assert payload["sent_at"] == "2026-10-21T16:00:00Z"
     assert [item["workcenter_id"] for item in payload["printers"]] == [12, 13]
     assert payload["printers"][0] == dict.fromkeys(SPEC_KEYS) | {"workcenter_id": 12, "reachable": False,

@@ -62,6 +62,9 @@ def _flag(fields: Mapping[str, Any], key: str) -> Optional[int]:
 
 
 STATE_CANCELLED = 4
+# err 1 stays set after a print is cancelled and carries into the next one, which prints
+# normally with no error on screen (live, 22-Oct-2026, decision 51): not a fault.
+STALE_ERR = 1
 
 
 def map_state(fields: Mapping[str, Any]) -> str:
@@ -90,25 +93,18 @@ def map_state(fields: Mapping[str, Any]) -> str:
 def _error_code(fields: Mapping[str, Any]) -> int:
     for key in ("err", "error"):
         code = _flag(fields, key)
-        if code:
+        if code and not (key == "err" and code == STALE_ERR):
             return code
     return 0
-
-
-def _progress(fields: Mapping[str, Any], state: str) -> Optional[float]:
-    progress = to_progress(fields.get("printProgress"))
-    no_layers = not to_count(fields.get("layer")) and not to_count(fields.get("TotalLayer"))
-    if state == "printing" and progress == 0.0 and no_layers:
-        # Prints launched from USB keep printProgress at 0: unknown, not 0 %.
-        return None
-    return progress
 
 
 def parse_info(raw: Mapping[str, Any], workcenter_id: int) -> PrinterStatus:
     """Normalise the box JSON (already a mapping) to PrinterStatus."""
     fields = pick_fields(raw)
     state = map_state(fields)
-    progress = _progress(fields, state)
+    # printProgress is the same whole percentage Creality Print shows; a long print stays
+    # at 0 until it reaches 1 % (USB prints included, decision 50).
+    progress = to_progress(fields.get("printProgress"))
     layer_total = to_count(fields.get("TotalLayer")) or None
     eta_known = progress is not None and progress > MIN_PROGRESS_FOR_ETA
     file_name = fields.get("print")

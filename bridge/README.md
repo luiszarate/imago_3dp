@@ -17,7 +17,7 @@ Programa pequeño que corre **en la red de la planta**, lee el estado de las imp
 Cada lectura se convierte al esquema común de SPEC 16.6 (`state`, `progress`, temperaturas, capas, tiempos, archivo, error, foto). Se envía un solo lote con todas las impresoras cada `poll_seconds` (10 s por defecto).
 
 Reglas de normalización relevantes (verificadas con las impresoras reales el 21-Oct-2026):
-- **CR-M4**: `connect 0` → `offline`; `state 4` (impresión cancelada en la impresora, llega con `err 1`) → `idle`; `err`/`error` ≠ 0 → `error`; `pause 1` → `paused`; `state 1` (o `mcu_is_print 1`) → `printing`; `state 2` → `finished`; `state 0` → `idle` (también durante el precalentamiento). En impresiones lanzadas desde USB, `printProgress` se queda en 0: se reporta avance **desconocido** (vacío), no 0 %. `printLeftTime` solo se usa con avance > 5 %. `printJobTime` está en segundos.
+- **CR-M4**: `connect 0` → `offline`; `state 4` (impresión cancelada en la impresora, llega con `err 1`) → `idle`; `err 1` se ignora (queda puesto tras una cancelación y pasa a la impresión siguiente, que imprime normal); cualquier otro `err` o `error` ≠ 0 → `error`; `pause 1` → `paused`; `state 1` (o `mcu_is_print 1`) → `printing`; `state 2` → `finished`; `state 0` → `idle` (también durante el precalentamiento). El avance es `printProgress` tal cual (el mismo porcentaje entero que muestra Creality Print, también en impresiones desde USB): una impresión larga se queda en 0 % hasta llegar al 1 %. `printLeftTime` solo se usa con avance > 5 %. `printJobTime` está en segundos.
 - **Adventurer 4**: `READY` → `idle`; `BUILDING_FROM_SD` → `printing`; `PAUSED` → `paused`; `BUILDING_COMPLETED` → `finished`. El firmware **no** reporta `BUILDING_COMPLETED` al terminar: se queda en `BUILDING_FROM_SD` con `100/100` y ambos objetivos de temperatura en 0; eso se reporta como `finished`. `SD printing byte x/100` es porcentaje. El tiempo restante se estima con el ritmo de avance observado (solo con avance ≥ 5 %).
 - Una impresora se reporta `reachable: false` / `offline` solo tras **3 lecturas fallidas seguidas** (la Creality Box y la Adventurer pierden peticiones sueltas); mientras tanto se repite el último estado bueno (sin foto).
 - Fotos: cada `snapshot_seconds` mientras imprime y cada `idle_snapshot_seconds` (300 s) en reposo. Fotos de más de 512 KB se descartan.
@@ -62,7 +62,7 @@ En el equipo de la planta (mini-PC, Raspberry de 64 bits, PC del cuarto de impre
 
 ```bash
 cd bridge
-docker build -t imago-3dp-bridge:0.2.1 .
+docker build -t imago-3dp-bridge:0.2.2 .
 
 # La llave en un archivo legible solo por el usuario del contenedor (uid 10001)
 printf '%s' 'LA_API_KEY' | sudo tee /etc/imago-3dp-bridge.key >/dev/null
@@ -77,7 +77,7 @@ docker run -d --name imago-3dp-bridge --restart unless-stopped \
   -e ODOO_LOGIN=puente-3dp@imago.aero \
   -e ODOO_API_KEY_FILE=/run/secrets/odoo_api_key \
   -v /etc/imago-3dp-bridge.key:/run/secrets/odoo_api_key:ro \
-  imago-3dp-bridge:0.2.1
+  imago-3dp-bridge:0.2.2
 
 docker logs -f imago-3dp-bridge
 ```

@@ -42,10 +42,11 @@ def test_preheat_is_idle_not_heating():
     assert status.nozzle_temp == 260.0
 
 
-def test_printing_from_usb_has_unknown_progress():
+def test_printing_from_usb_below_one_percent_reports_zero():
+    # 873 s of a ~30 h print (printLeftTime 107039 s) is 0.8 %: printProgress truncates to 0.
     status = parse(load_json("creality_printing_usb.json"))
     assert status.state == "printing"
-    assert status.progress is None
+    assert status.progress == 0.0
     assert status.file_name == "BASESE~1.GCO"
     assert status.job_time_min == 15  # printJobTime 873 s
     assert status.time_left_min is None  # printLeftTime is unreliable here
@@ -96,6 +97,25 @@ def test_cancelled_print_is_idle_not_error():
     assert status.job_time_min == 27
 
 
+def test_stale_err_one_while_printing_is_not_error():
+    """err 1 carried over from a cancelled print; the next print runs normally (live, 22-Oct-2026)."""
+    status = parse(load_json("creality_printing_err1.json"))
+    assert status.state == "printing"
+    assert status.error_text is None
+    assert status.progress == 5.0  # Creality Print showed the same percentage
+    assert status.file_name == "BOM_LG~1.GCO"
+
+
+def test_stale_err_one_alone_is_idle():
+    assert parse(dict(load_json("creality_idle.json"), err=1)).state == "idle"
+
+
+@pytest.mark.parametrize("changes", [{"err": 2}, {"error": 1}, {"err": 1, "error": 5}])
+def test_other_error_codes_still_are_errors(changes):
+    row = dict(load_json("creality_printing_err1.json"), **changes)
+    assert parse(row).state == "error"
+
+
 def test_error_text_carries_code():
     status = parse(dict(load_json("creality_idle.json"), err=3))
     assert status.error_text == "Error de impresora (código 3)"
@@ -114,7 +134,8 @@ def secret_row():
 
 def test_fixtures_contain_no_secret_keys():
     for name in ("creality_idle.json", "creality_preheat_idle.json", "creality_printing_usb.json",
-                 "creality_printing_progress1.json", "creality_timeout.json"):
+                 "creality_printing_progress1.json", "creality_printing_err1.json", "creality_cancelled.json",
+                 "creality_timeout.json"):
         assert not set(SECRET_KEYS) & set(load_json(name)), name
 
 

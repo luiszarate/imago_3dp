@@ -175,7 +175,7 @@ def test_real_creality_timeout_row_is_absorbed(env):
     for _ in range(3):
         step(env)
         states.append((last_printers(env)[1]["state"], last_printers(env)[1]["progress"]))
-    assert states == [("printing", None), ("printing", None), ("printing", 1.0)]
+    assert states == [("printing", 0.0), ("printing", 0.0), ("printing", 1.0)]
 
 
 def test_three_failures_rule_applies_to_flashforge(env):
