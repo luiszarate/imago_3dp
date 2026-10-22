@@ -531,7 +531,7 @@
       {
         "name": "lg",
         "value": "1200px",
-        "purpose": "Desde aquí: fila inferior de tres paneles y Modo pantalla en una sola pantalla. Por debajo: Tendencias a ancho completo y Modo pantalla desplazable."
+        "purpose": "Desde aquí: Cola 3fr | Carretes 2fr con Tendencias a todo el ancho debajo, y Modo pantalla en una sola pantalla. Por debajo: Tendencias a ancho completo y Modo pantalla desplazable."
       }
     ],
     "wallMode": {

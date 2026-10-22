@@ -20,7 +20,7 @@ Módulo de Odoo 14 CE para Imago Aerospace: solicitudes de impresión 3D, impres
 - Pendiente: validación funcional en `manuf_test` y manual de usuario.
 - v0.2 (`SPEC.md` §16) **implementada**: F1 dashboard (14.0.2.0.0), F2 puente + drivers + telemetría y F3 alertas (14.0.2.2.0). Pendiente: confirmar qué significa `state 4` + `err 1` de la CR-M4 tras detener una impresión (decisión 40), V-05 detrás del proxy de producción y V-06 (filestore) en `manuf_test`.
 - Impresión combinada (REQ-3DP-113, 14.0.2.1.0) **implementada** (`SPEC.md` §17; decisiones 33–39, incluida la revisión de código) y actualización desde 14.0.2.0.0 verificada.
-- Diseño: `PRODUCT.md`, `DESIGN.md` (+ `.impeccable/design.json`) y el brief/contrato de superficie en `.impeccable/surfaces/` (Impeccable). Estructura: franja de acciones sobre las estaciones, con Modo pantalla. Revisión final de diseño: *ship*. Cambios visuales al dashboard deben respetar los tokens y reglas de `DESIGN.md`.
+- Diseño: `PRODUCT.md`, `DESIGN.md` (+ `.impeccable/design.json`) y el brief/contrato de superficie en `.impeccable/surfaces/` (Impeccable). Estructura: franja de acciones sobre las estaciones (`auto-fit`, foto de cámara junto a la lectura en estaciones anchas), Cola | Carretes a la misma altura y Tendencias a todo el ancho debajo; con Modo pantalla. Revisión final de diseño: *ship*. Cambios visuales al dashboard deben respetar los tokens y reglas de `DESIGN.md`.
 
 ## Impresión combinada (no romper)
 - Una sola WO `[MCH]` por placa, en la MO de la solicitud líder; los demás intentos no tienen WO y sus consumos se ligan a la MO de su propia solicitud (`consumption.workorder_id` vacío).

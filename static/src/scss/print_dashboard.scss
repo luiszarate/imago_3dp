@@ -257,7 +257,9 @@ $p3d-idle-bg: $gray-200;
     .o_p3d_stations {
         display: grid;
         gap: $p3d-gap;
-        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        // auto-fit: the printers share the full width instead of leaving
+        // empty tracks to the right.
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
         margin-bottom: 20px;
     }
 
@@ -375,12 +377,15 @@ $p3d-idle-bg: $gray-200;
     }
 
     // Live printer reading (bridge). Same tokens as the station band.
+    // The camera photo sits beside the reading on a wide station and wraps
+    // below it on a narrow one.
     .o_p3d_live {
+        align-items: flex-start;
         background: $p3d-page;
         border-top: 1px solid $p3d-line;
         display: flex;
-        flex-direction: column;
-        gap: 4px;
+        flex-wrap: wrap;
+        gap: 8px 16px;
         margin-top: 10px;
         padding: 8px 16px;
 
@@ -412,6 +417,14 @@ $p3d-idle-bg: $gray-200;
         }
     }
 
+    .o_p3d_live_info {
+        display: flex;
+        flex: 1 1 20rem;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
     .o_p3d_live_metrics {
         color: $p3d-ink;
         display: flex;
@@ -429,9 +442,10 @@ $p3d-idle-bg: $gray-200;
         aspect-ratio: 4 / 3;
         background: $p3d-idle-bg;
         border-radius: $p3d-radius;
-        margin-top: 4px;
+        flex: 1 1 12rem;
+        max-width: 22rem;
+        min-width: 0;
         object-fit: cover;
-        width: 100%;
     }
 
     .o_p3d_stamps {
@@ -486,11 +500,27 @@ $p3d-idle-bg: $gray-200;
     // ------------------------------------------------------------------
     // Queue, spools, trends
     // ------------------------------------------------------------------
+    // Queue and spools share a row and its height, whichever list is longer;
+    // trends get the full width below so the charts keep a useful size.
     .o_p3d_lower {
-        align-items: start;
         display: grid;
         gap: $p3d-gap;
-        grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 5fr);
+        grid-template-areas:
+            "queue spools"
+            "trends trends";
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+
+    .o_p3d_queue {
+        grid-area: queue;
+    }
+
+    .o_p3d_spools {
+        grid-area: spools;
+    }
+
+    .o_p3d_trends {
+        grid-area: trends;
     }
 
     .o_p3d_rows {
@@ -660,16 +690,16 @@ $p3d-idle-bg: $gray-200;
         .o_p3d_lower {
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         }
-
-        .o_p3d_trends {
-            grid-column: 1 / -1;
-        }
     }
 
     @include media-breakpoint-down(sm) {
         padding: 10px 12px 20px;
 
         .o_p3d_lower {
+            grid-template-areas:
+                "queue"
+                "spools"
+                "trends";
             grid-template-columns: minmax(0, 1fr);
         }
 

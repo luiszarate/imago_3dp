@@ -251,8 +251,8 @@ Página con relleno de 12 px 16 px 24 px y separación base de 16 px entre bloqu
 
 - **Resumen:** una línea flexible que se envuelve (separación 4 px 20 px entre conteos), con herramientas a la derecha y un borde inferior de 1 px.
 - **Franja de pendientes:** una fila desplazable horizontalmente, columnas de 260–300 px, separación de 10 px, `scroll-snap` por proximidad. Ordenada por severidad.
-- **Estaciones:** rejilla `auto-fill` de columnas de al menos 290 px.
-- **Fila inferior:** a partir de 1200 px (Bootstrap `lg`) son tres paneles, Cola 4fr | Carretes 3fr | Tendencias 5fr. Por debajo de 1200 px Tendencias pasa a ocupar una fila completa para que la gráfica conserve un ancho útil; Cola y Carretes quedan en dos columnas. Por debajo de `sm` todo va en una columna, la franja usa tarjetas de 240 px–85 % y se oculta el texto de estado de actualización.
+- **Estaciones:** rejilla `auto-fit` de columnas de al menos 290 px: las impresoras se reparten todo el ancho, sin columnas vacías a la derecha.
+- **Fila inferior:** áreas "queue spools" / "trends trends". A partir de 1200 px (Bootstrap `lg`) Cola 3fr | Carretes 2fr comparten fila y alto (el panel más corto se estira hasta el más largo, sin huecos de fondo), y Tendencias va debajo a todo el ancho. Por debajo de 1200 px Cola y Carretes quedan en dos columnas iguales. Por debajo de `sm` todo va en una columna, la franja usa tarjetas de 240 px–85 % y se oculta el texto de estado de actualización.
 - **Filas:** separadas por línea de 1 px, 7 px de alto de relleno.
 
 **Modo pantalla:**
@@ -300,7 +300,7 @@ Esquinas apenas suavizadas (4 px) en paneles, tarjetas, estaciones y en el carte
 - **Bloque** dentro de la estación, entre el cuerpo y el carrete: fondo `p3d-page`, línea superior de 1 px `p3d-line`, padding 8 × 16 px. Solo aparece en impresoras con conexión.
 - **Encabezado:** "Impresora: <estado>" con ícono Font Awesome y el color del estado (información imprimiendo, crítico en error, correcto terminada, `p3d-idle` sin datos o apagada); a la derecha, la antigüedad del dato ("hace 12 s") en tinta tenue.
 - **Métricas** en una fila que se envuelve (`small`, tinta normal): boquilla y cama "actual/objetivo °C", capa, minutos imprimiendo y faltantes; sin datos frescos no se muestran.
-- **Foto** de la cámara a lo ancho, 4:3, radio 4 px, `object-fit: cover`; en Modo pantalla, máximo 9rem de alto.
+- **Foto** de la cámara 4:3, radio 4 px, `object-fit: cover`, hasta 22rem de ancho. El bloque es una fila flexible que se envuelve: en una estación ancha la foto va a la derecha de la lectura (`o_p3d_live_info`, base 20rem); en una angosta baja debajo a lo ancho. En Modo pantalla, máximo 9rem de alto.
 - El medidor de avance dice "en vivo" cuando la impresora reporta avance y "estimado por tiempo" cuando no: la fuente del dato siempre es visible.
 
 ### Sellos de intento

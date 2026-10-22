@@ -160,20 +160,22 @@
             </div>
 
             <div t-if="printer.live" t-attf-class="o_p3d_live o_p3d_live_#{printer.live.state}">
-                <div class="o_p3d_meter_label">
-                    <a href="#" t-att-class="printer.live.status_id ? 'o_p3d_open o_p3d_live_state' : 'o_p3d_live_state'"
-                       data-model="imago.printer.status" t-att-data-id="printer.live.status_id">
-                        <i t-attf-class="fa #{printer.live_icon}" role="img" aria-hidden="true"/>
-                        Impresora: <strong t-esc="printer.live.state_label"/>
-                    </a>
-                    <span t-if="printer.live_age" class="o_p3d_muted o_p3d_small" t-esc="printer.live_age"/>
-                </div>
-                <div t-if="printer.live_metrics.length" class="o_p3d_live_metrics o_p3d_small">
-                    <span t-foreach="printer.live_metrics" t-as="metric" t-esc="metric"/>
-                </div>
-                <div t-if="printer.live.error_text" class="o_p3d_text_critical o_p3d_small" t-esc="printer.live.error_text"/>
-                <div t-elif="printer.live.file_name" class="o_p3d_muted o_p3d_small o_p3d_live_file">
-                    Archivo: <t t-esc="printer.live.file_name"/>
+                <div class="o_p3d_live_info">
+                    <div class="o_p3d_meter_label">
+                        <a href="#" t-att-class="printer.live.status_id ? 'o_p3d_open o_p3d_live_state' : 'o_p3d_live_state'"
+                           data-model="imago.printer.status" t-att-data-id="printer.live.status_id">
+                            <i t-attf-class="fa #{printer.live_icon}" role="img" aria-hidden="true"/>
+                            Impresora: <strong t-esc="printer.live.state_label"/>
+                        </a>
+                        <span t-if="printer.live_age" class="o_p3d_muted o_p3d_small" t-esc="printer.live_age"/>
+                    </div>
+                    <div t-if="printer.live_metrics.length" class="o_p3d_live_metrics o_p3d_small">
+                        <span t-foreach="printer.live_metrics" t-as="metric" t-esc="metric"/>
+                    </div>
+                    <div t-if="printer.live.error_text" class="o_p3d_text_critical o_p3d_small" t-esc="printer.live.error_text"/>
+                    <div t-elif="printer.live.file_name" class="o_p3d_muted o_p3d_small o_p3d_live_file">
+                        Archivo: <t t-esc="printer.live.file_name"/>
+                    </div>
                 </div>
                 <img t-if="printer.snapshot_url" class="o_p3d_snapshot" t-att-src="printer.snapshot_url"
                      t-att-alt="'Cámara de ' + printer.name" loading="lazy"/>
