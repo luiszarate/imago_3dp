@@ -1,3 +1,5 @@
+> **Archivado el 2026-11-08.** Este repositorio contiene la versión para **Odoo 14 CE** de `imago_3dp`, que dejó de usarse ese día, cuando el ERP de Imago Aerospace pasó a Odoo 19. La versión para Odoo 19 se mantiene en el repositorio de la migración (`luiszarate/odoo-migration`, privado), carpeta `addons/19.0/imago_3dp`.
+
 # Imago – Impresión 3D (`imago_3dp`)
 
 Módulo de Odoo 14 Community para Imago Aerospace. Gestiona las **solicitudes de impresión 3D** de ingeniería, las **4 impresoras** (como centros de trabajo de MRP) y el **inventario de filamento por carrete** (un lote = un carrete), con consumo real en gramos, incluidos los intentos fallidos.
